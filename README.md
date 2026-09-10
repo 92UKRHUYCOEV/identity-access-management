@@ -3,8 +3,9 @@
 <img width="3258" height="1086" alt="image" src="https://github.com/user-attachments/assets/46176870-84b1-492b-a73d-b6b1bf991bd9" />
 
 ## Project Flow:
+```html
 	Identity → Authentication → Authorization → Privileged Access → Monitoring → Detection → Response → Automate
-
+```
 
 # Implementing Identity and Access Management (IAM) Framework
 
@@ -110,7 +111,7 @@ The end goal is to automate as much as possible, with recurring analysis to upda
 Identity Security Posture Management (ISPM) can provide an additional continuous-assessment layer for identifying identity configuration weaknesses, excessive privileges, and emerging identity risks.
 
 ## IAM Implementation Lifecycle
-	**PLAN → ASSESS → DESIGN → DEPLOY → GOVERN → MONITOR → IMPROVE → AUTOMATE**
+	# **PLAN → ASSESS → DESIGN → DEPLOY → GOVERN → MONITOR → IMPROVE → AUTOMATE**
 
 The objective is not to manage user accounts. A mature IAM implementation establishes a verifiable security model in which identities are authenticated appropriately, access is explicitly authorized, privileges are minimized, changes are governed, and identity activity produces sufficient evidence for investigation and audit.
 
