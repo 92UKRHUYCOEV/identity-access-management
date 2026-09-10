@@ -121,7 +121,7 @@ That gives us a natural bridge from IAM administration → IAM security engineer
 # PYTHON DETECTION SCRIPTS
 
 1. Detect Excessive Privileges
-<Python>
+``` Python
 
 user_roles = {
     "alice": ["read_reports"],
@@ -136,10 +136,10 @@ for user, roles in user_roles.items():
         print(f"[ALERT] {user} may have excessive privileges: {roles}")
 
 This demonstrates least-privilege monitoring. Charlie has more permissions than the defined threshold and is flagged for review.
-
+```
 
 2. Detect Unauthorized Administrative Access
-<Python>
+``` Python
 
 authorized_admins = ["alice", "security_admin"]
 
@@ -157,10 +157,10 @@ for event in login_events:
         )
 
 This checks whether someone using an administrative role is actually on the approved administrator list.
-
+```
 
 3. Detect Repeated Failed Logins
-<Python>
+``` Python
 
 login_events = [
     {"user": "alice", "status": "failed"},
@@ -184,10 +184,10 @@ for user, count in failed_logins.items():
         )
 
 This models detection of password spraying, brute-force activity, or repeated authentication failures.
-
+```
 
 4. Detect Dormant Account Usage
-<Python>
+``` Python
 
 from datetime import datetime, timedelta
 
@@ -214,10 +214,10 @@ for account in accounts:
         )
 
 This supports Identity Governance and Administration (IGA) by identifying accounts that may need disabling or review.
-
+```
 
 5. Detect Privilege Escalation
-<Python>
+``` Python
 
 role_changes = [
     {
@@ -246,10 +246,10 @@ for change in role_changes:
         )
 
 This one is particularly useful for a cybersecurity portfolio because it detects a security-relevant change, rather than just validating configuration.
-
+```
 
 6. Detect Disabled Account Authentication
-<Python>
+``` Python
 
 accounts = {
     "alice": "enabled",
@@ -275,10 +275,10 @@ for event in login_events:
         )
 
 A disabled account successfully authenticating would warrant immediate investigation.
-
+```
 
 7. Detect MFA Fatigue Behavior
-<Python>
+``` Python
 
 mfa_events = [
     {"user": "alice", "result": "denied"},
@@ -307,10 +307,11 @@ for event in mfa_events:
         )
 
 This is an especially strong IAM detection example because it connects authentication telemetry to attacker behavior.
+```
 
 8. Detect Access Outside Normal Role Permissions
 This expands the original RBAC example into an actual detection control.
-<Python>
+``` Python
 
 role_permissions = {
     "analyst": ["read_reports"],
@@ -343,9 +344,10 @@ for event in activity_log:
             f"{user} attempted '{action}' "
             f"with role '{role}'"
         )
+```
 
-This produces the kind of detection logic I would emphasize in the IAM project:
-	Identity → Role → Expected Permission → Observed Action → Detection
+This produces the kind of detection logic in the IAM project:
+	![#f03c15](Identity → Role → Expected Permission → Observed Action → Detection) `#f03c15`
 
 Python IAM Detection Library:
 	1. detect_excessive_privileges.py
