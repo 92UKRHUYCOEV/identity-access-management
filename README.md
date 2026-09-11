@@ -7,7 +7,7 @@
 	Identity → Authentication → Authorization → Privileged Access → Monitoring → Detection → Response → Automate
 ```
 
-# Implementing Identity and Access Management (IAM) Framework
+# Implementing Identity and Access Management (IAM)
 
 Implementing Identity and Access Management (IAM) is essential for protecting organizational resources, enforcing least privilege, reducing unauthorized access, and supporting regulatory compliance. 
 An effective IAM program establishes controls across the complete identity lifecycle—from identity creation and authentication through authorization, governance, monitoring, and eventual de-provisioning.
