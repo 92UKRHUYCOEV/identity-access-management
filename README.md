@@ -444,8 +444,8 @@ AuditLogs
 | order by TimeGenerated desc
 ```
 This demonstrates an important IAM concept:
-```Python
-Privileged action + actor not authorized = detection
+```kql
+	Privileged action + actor not authorized = detection
 ```
 Microsoft also uses `AuditLogs` to investigate sensitive administrative actions and possible privilege escalation.
 
@@ -573,7 +573,7 @@ Now the logic is different:
 Privileged role assigned does not automatically equal malicious.
 
 Instead:
-```Python
+```yaml
 **Privileged role assignment
 	• unexpected actor 
 	• unusual timing 
@@ -622,9 +622,9 @@ SigninLogs
 
 - Microsoft's Sentinel account-action logic similarly uses `AuditLog`s and the `AccountEnabled` property to identify account-disable activity.
 - This correlation is a particularly good portfolio example:
-```Python
-      Account disabled → later successful authentication → investigate
-```
+	```yaml
+	Account disabled → later successful authentication → investigate
+	```
 
 
 
