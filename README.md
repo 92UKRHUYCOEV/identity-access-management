@@ -1,6 +1,8 @@
 # Identity Access Management (IAM)
 
+<p align="center">
 <img width="3258" height="1086" alt="image" src="https://github.com/user-attachments/assets/46176870-84b1-492b-a73d-b6b1bf991bd9" />
+</p>
 
 ## Project Flow:
 ```python
@@ -801,24 +803,9 @@ The same detection logic can then be implemented using different technologies:
 - Microsoft Sentinel/KQL can analyze enterprise telemetry for evidence of the same security condition.
 
 For example:
-
-<img width="938" height="2362" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/1ecc23d7-b0ba-46cf-af94-d15f13bed08c" />
-
-IAM Principle
-     ↓
-Least Privilege
-     ↓
-Security Condition
-     ↓
-User performs an action outside expected authorization
-     ↓
-Detection Logic
-    ↙     ↘
- Python   KQL
-    ↘     ↙
-   Evidence
-      ↓
-Investigation
+<p align="center">
+<img width="1133" height="1388" alt="understanding of the underlying IAM security condition" src="https://github.com/user-attachments/assets/e768a0d0-c373-4b11-bb42-7d8f99ffb920" />
+</p>
 
 
 This approach demonstrates an understanding of the underlying IAM security condition, rather than dependence on a particular programming language or security platform.
