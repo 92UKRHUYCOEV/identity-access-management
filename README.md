@@ -861,11 +861,11 @@ MITRE ATT&CK	Provides adversary-behavior mappings for techniques involving valid
 
 There is also a useful way to position these rather than presenting them as six equivalent “frameworks”:
 
-Governance & Security Framework: NIST CSF 2.0
-Security Controls: NIST SP 800-53 / CIS Controls
-Digital Identity: NIST SP 800-63
-Architecture: NIST Zero Trust / SP 800-207
-Threat Behavior: MITRE ATT&CK
+- Governance & Security Framework: NIST CSF 2.0
+- Security Controls: NIST SP 800-53 / CIS Controls
+- Digital Identity: NIST SP 800-63
+- Architecture: NIST Zero Trust / SP 800-207
+- Threat Behavior: MITRE ATT&CK
 
 That classification would look very professional in the report because it shows you understand what each framework is actually contributing, rather than putting a collection of framework logos at the bottom of an IAM project.
 
