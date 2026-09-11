@@ -382,3 +382,34 @@ The objective is to demonstrate:
 This provides flexibility across standalone applications, automation workflows, cloud environments, and enterprise SIEM platforms while preserving the same evidence-driven detection methodology.
 
 
+# KQL DETECTION SCRIPTS
+The following matching Microsoft Sentinel / KQL detection for the eight Python concepts.
+Microsoft currently documents:
+	• SigninLogs for authentication analysis
+	• AuditLogs for identity/directory changes
+	• AzureActivity for Azure resource operations.
+
+1. Excessive Privileges: This looks for users receiving an unusually high number of role assignments.
+```kql
+
+AuditLogs
+| where TimeGenerated > ago(30d)
+| where OperationName has_any (
+    "Add member to role",
+    "Add eligible member to role",
+    "Add member to directory role"
+)
+| extend TargetUser = tostring(TargetResources[0].userPrincipalName)
+| extend RoleName = tostring(TargetResources[0].displayName)
+| where isnotempty(TargetUser)
+| summarize
+    RoleAssignmentCount = count(),
+    Roles = make_set(RoleName)
+    by TargetUser
+| where RoleAssignmentCount >= 3 //Per users role
+| order by RoleAssignmentCount desc
+```
+Detection logic:  User → Role assignments → Count privileges → Flag excessive access
+The threshold of 3 is an example, not a universal definition of excessive privilege. In production, compare assignments against the user's expected role.
+
+
