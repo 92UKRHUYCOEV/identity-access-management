@@ -806,7 +806,7 @@ The same detection logic can then be implemented using different technologies:
 
 For example:
 <p align="center">
-<img width="533" height="788" alt="understanding of the underlying IAM security condition" src="https://github.com/user-attachments/assets/e768a0d0-c373-4b11-bb42-7d8f99ffb920" />
+<img width="433" height="588" alt="understanding of the underlying IAM security condition" src="https://github.com/user-attachments/assets/e768a0d0-c373-4b11-bb42-7d8f99ffb920" />
 </p>
 
 This approach demonstrates an understanding of the underlying IAM security condition, rather than dependence on a particular programming language or security platform.
