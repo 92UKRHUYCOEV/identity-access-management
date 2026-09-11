@@ -663,9 +663,12 @@ MFAFailures
     AppDisplayName
 | order by SuccessfulLogin desc
 ```
-```python
-** Repeated MFA failures → followed by successful authentication**
-```
+
+
+<font color="orange">** Repeated MFA failures → followed by successful authentication**</font>
+
+
+
 
 
 
