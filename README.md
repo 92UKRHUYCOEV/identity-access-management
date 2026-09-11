@@ -413,3 +413,219 @@ Detection logic:  User → Role assignments → Count privileges → Flag excess
 The threshold of 3 is an example, not a universal definition of excessive privilege. In production, compare assignments against the user's expected role.
 
 
+## 2. Unauthorized Administrative Access
+Here we define an approved administrator baseline and detect privileged operations performed by anyone outside it.
+```kql
+
+let ApprovedAdmins = dynamic([
+    "alice@contoso.com",
+    "securityadmin@contoso.com"
+]);
+
+AuditLogs
+| where TimeGenerated > ago(24h)
+| extend Actor =
+    tostring(InitiatedBy.user.userPrincipalName)
+| where OperationName has_any (
+    "Add member to role",
+    "Remove member from role",
+    "Reset user password",
+    "Delete user",
+    "Add service principal"
+)
+| where isnotempty(Actor)
+| where Actor !in~ (ApprovedAdmins)
+| project
+    TimeGenerated,
+    Actor,
+    OperationName,
+    TargetResources,
+    Result
+| order by TimeGenerated desc
+```
+This demonstrates an important IAM concept:
+```Python
+Privileged action + actor not authorized = detection
+```
+Microsoft also uses `AuditLogs` to investigate sensitive administrative actions and possible privilege escalation.
+
+
+## 3. Repeated Failed Authentication
+This is the closest KQL equivalent to the Python failed-login counter.
+```kql
+
+SigninLogs
+| where TimeGenerated > ago(1h)
+| where ResultType != 0
+| summarize
+    FailedAttempts = count(),
+    Applications = make_set(AppDisplayName),
+    SourceIPs = make_set(IPAddress)
+    by UserPrincipalName, bin(TimeGenerated, 10m)
+| where FailedAttempts >= 5
+| order by FailedAttempts desc
+
+Here we're asking:
+Which identity failed authentication five or more times within ten minutes?
+Microsoft documents ResultType != 0 as a method for querying failed sign-ins.
+
+
+4. Dormant Account Activity
+This one is more interesting because merely finding a dormant account isn't the same as detecting activity from a dormant account.
+<kql>
+
+let HistoricalSignins =
+    SigninLogs
+    | where TimeGenerated between (ago(120d) .. ago(30d))
+    | where ResultType == 0
+    | summarize LastHistoricalLogin = max(TimeGenerated)
+        by UserPrincipalName;
+
+let RecentSignins =
+    SigninLogs
+    | where TimeGenerated > ago(24h)
+    | where ResultType == 0
+    | summarize
+        CurrentLogin = max(TimeGenerated),
+        SourceIP = any(IPAddress),
+        Application = any(AppDisplayName)
+        by UserPrincipalName;
+
+RecentSignins
+| join kind=leftouter HistoricalSignins on UserPrincipalName
+| extend DaysSincePreviousLogin =
+    datetime_diff("day", CurrentLogin, LastHistoricalLogin)
+| where DaysSincePreviousLogin >= 90
+| project
+    UserPrincipalName,
+    LastHistoricalLogin,
+    CurrentLogin,
+    DaysSincePreviousLogin,
+    SourceIP,
+    Application
+| order by DaysSincePreviousLogin desc
+```
+
+This detects something much more security-relevant:
+- A previously inactive identity suddenly became active.
+- Your actual usable lookback depends on how much SigninLogs history your workspace retains.
+
+
+## . Privilege Escalation
+A production design would only treat a privileged-role assignment as suspicious only when context increases the risk. 
+That context can include whether the actor is an approved administrator, whether the change occurred through PIM, 
+whether it happened during an approved change window, and whether the assignment was permanent or unexpected.
+```kql
+
+let ApprovedAdmins = dynamic([
+    "securityadmin@contoso.com",
+    "iamadmin@contoso.com"
+]);
+
+let PrivilegedRoles = dynamic([
+    "Global Administrator",
+    "Privileged Role Administrator",
+    "Security Administrator",
+    "User Administrator"
+]);
+
+AuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName has_any (
+    "Add member to role",
+    "Add eligible member to role",
+    "Add member to directory role"
+)
+| extend Actor =
+    tostring(InitiatedBy.user.userPrincipalName)
+| extend TargetUser =
+    tostring(TargetResources[0].userPrincipalName)
+| extend RoleName =
+    tostring(TargetResources[0].displayName)
+| where RoleName in~ (PrivilegedRoles)
+| extend ApprovedAdministrator =
+    Actor in~ (ApprovedAdmins)
+| extend OutsideChangeWindow =
+    hourofday(TimeGenerated) < 8
+    or hourofday(TimeGenerated) > 18
+| where
+    ApprovedAdministrator == false
+    or OutsideChangeWindow == true
+| project
+    TimeGenerated,
+    Actor,
+    TargetUser,
+    RoleName,
+    ApprovedAdministrator,
+    OutsideChangeWindow,
+    OperationName,
+    Result
+| order by TimeGenerated desc
+```
+
+Conceptually:
+```kql
+Standard Identity → Privileged Role Assignment → Alert
+```
+For a production analytic, we'd enrich this with approved change windows, Privileged Identity Management (PIM) activity, and known administrators rather than treating every privileged assignment as malicious.
+
+Now the logic is different:
+Privileged role assigned does not automatically equal malicious.
+
+Instead:
+```Python
+**Privileged role assignment
+	• unexpected actor 
+	• unusual timing 
+	• no approved workflow
+= higher-confidence privilege-escalation detection** 
+```
+- PIM makes this even stronger. 
+- A normal PIM activation may be expected, while a direct permanent assignment to Global Administrator outside PIM would deserve substantially more scrutiny.
+
+
+## 6. Disabled-Account Authentication
+This is a good example of correlation, because SigninLogs alone doesn't establish when the account was disabled.
+First identify account-disable activity, then look for a subsequent successful authentication.
+```kql
+
+let DisabledAccounts =
+    AuditLogs
+    | where TimeGenerated > ago(30d)
+    | where OperationName == "Update user"
+    | mv-expand Property = TargetResources[0].modifiedProperties
+    | extend
+        PropertyName = tostring(Property.displayName),
+        NewValue = tostring(Property.newValue),
+        DisabledUser =
+            tostring(TargetResources[0].userPrincipalName)
+    | where PropertyName == "AccountEnabled"
+    | where NewValue contains "false"
+    | summarize DisabledTime = max(TimeGenerated)
+        by DisabledUser;
+
+SigninLogs
+| where TimeGenerated > ago(30d)
+| where ResultType == 0
+| join kind=inner DisabledAccounts
+    on $left.UserPrincipalName == $right.DisabledUser
+| where TimeGenerated > DisabledTime
+| project
+    TimeGenerated,
+    UserPrincipalName,
+    DisabledTime,
+    IPAddress,
+    AppDisplayName,
+    Location
+| order by TimeGenerated desc
+```
+
+- Microsoft's Sentinel account-action logic similarly uses `AuditLog`s and the `AccountEnabled` property to identify account-disable activity.
+- This correlation is a particularly good portfolio example:
+```Python
+      Account disabled → later successful authentication → investigate
+```
+
+
+
+
