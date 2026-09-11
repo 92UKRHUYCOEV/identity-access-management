@@ -464,15 +464,15 @@ SigninLogs
     by UserPrincipalName, bin(TimeGenerated, 10m)
 | where FailedAttempts >= 5
 | order by FailedAttempts desc
-
+```
 Here we're asking:
 Which identity failed authentication five or more times within ten minutes?
 Microsoft documents ResultType != 0 as a method for querying failed sign-ins.
 
 
-4. Dormant Account Activity
+## 4. Dormant Account Activity
 This one is more interesting because merely finding a dormant account isn't the same as detecting activity from a dormant account.
-<kql>
+```kql
 
 let HistoricalSignins =
     SigninLogs
@@ -565,7 +565,7 @@ AuditLogs
 
 Conceptually:
 ```kql
-Standard Identity → Privileged Role Assignment → Alert
+	Standard Identity → Privileged Role Assignment → Alert
 ```
 For a production analytic, we'd enrich this with approved change windows, Privileged Identity Management (PIM) activity, and known administrators rather than treating every privileged assignment as malicious.
 
@@ -626,12 +626,14 @@ SigninLogs
 	Account disabled → later successful authentication → investigate
 	```
  &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-7. MFA Fatigue - NEW VERSION
+## 7. MFA Fatigue
 MFA fatigue detection looks for repeated multi-factor authentication challenges that may indicate an attacker is attempting to pressure a user into approving an unauthorized sign-in.
 Microsoft `Entra sign-in logs` record MFA-related authentication failures in `SigninLogs`. 
 A simple detection can identify users who experience multiple failed MFA challenges within a short period.
+
+// Introductory Baseline
 ```kql
-SigninLogs
+SigninLogs 
 | where TimeGenerated > ago(1h)
 | where ResultType == 50074
 | summarize
@@ -645,11 +647,17 @@ SigninLogs
 
 This query identifies users who experienced three or more failed MFA challenges within a ten-minute period.
 The detection logic is:
-Repeated MFA Failures → Identify User → Count Attempts → Flag Repeated Challenge Activity
+```yaml
+	Repeated MFA Failures → Identify User → Count Attempts → Flag Repeated Challenge Activity
+```
 However, repeated MFA failures alone do not prove an MFA fatigue attack. 
 They may also result from user error, expired sessions, device issues, or legitimate authentication problems.
+
 A stronger detection looks for a more meaningful behavioral sequence:
-Repeated MFA Failures → Followed by Successful Authentication
+```yaml
+	Repeated MFA Failures → Followed by Successful Authentication
+```
+// Primary Example
 ```kql
 let MFAFailures =
     SigninLogs
@@ -683,17 +691,21 @@ MFAFailures
     AppDisplayName
 | order by SuccessfulLogin desc
 ```
+
 This second query correlates repeated failed MFA challenges with a later successful sign-in for the same identity.
 
 The detection logic becomes:
 	Repeated MFA Failures → Same Identity → Later Successful Sign-In → Investigate
 
-This approach is stronger because it evaluates a behavioral sequence rather than a single error condition.
+This approach is stronger because it evaluates a `behavioral sequence` rather than a single error condition.
+
 A successful sign-in following repeated MFA failures still does not automatically prove malicious activity. 
-It indicates a higher-risk authentication pattern that should be investigated in context with source IP addresses, device information, application access, geographic location, Conditional Access results, and user-reported MFA activity.
+It indicates a higher-risk authentication pattern that should be investigated in context with source IP addresses, 
+device information, application access, geographic location, Conditional Access results, and user-reported MFA activity.
 
 ## Detection Progression
 
+```python
 Basic Detection
 Repeated MFA Failures
         ↓
@@ -709,9 +721,11 @@ Successful Authentication
 Higher-Risk Behavioral Pattern
         ↓
 Investigation
+```
 
-The important distinction is that the first query detects authentication failure volume, while the second detects a potentially suspicious sequence of authentication behavior.
-For the report, I would keep the second query as the primary example and treat the first as the introductory baseline. 
+The important distinction is that the first query detects `authentication failure volume`, while the second detects a potentially suspicious `sequence of authentication behavior`.
+
+For the report, I kept the second query as the primary example and treated the first as the introductory baseline. 
 It better supports the principle that useful detection should focus on behavior and context, not only on isolated log values.
 
 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
