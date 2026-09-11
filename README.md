@@ -625,9 +625,31 @@ SigninLogs
 	```yaml
 	Account disabled → later successful authentication → investigate
 	```
+ &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+7. MFA Fatigue - NEW VERSION
+MFA fatigue detection looks for repeated multi-factor authentication challenges that may indicate an attacker is attempting to pressure a user into approving an unauthorized sign-in.
+Microsoft `Entra sign-in logs` record MFA-related authentication failures in `SigninLogs`. 
+A simple detection can identify users who experience multiple failed MFA challenges within a short period.
+```kql
+SigninLogs
+| where TimeGenerated > ago(1h)
+| where ResultType == 50074
+| summarize
+    MFAFailures = count(),
+    SourceIPs = make_set(IPAddress),
+    Applications = make_set(AppDisplayName)
+    by UserPrincipalName, bin(TimeGenerated, 10m)
+| where MFAFailures >= 3
+| order by MFAFailures desc
+```
 
-## 7. MFA Fatigue
-Microsoft documents ResultType == 50074 for failed MFA challenges.
+This query identifies users who experienced three or more failed MFA challenges within a ten-minute period.
+The detection logic is:
+Repeated MFA Failures → Identify User → Count Attempts → Flag Repeated Challenge Activity
+However, repeated MFA failures alone do not prove an MFA fatigue attack. 
+They may also result from user error, expired sessions, device issues, or legitimate authentication problems.
+A stronger detection looks for a more meaningful behavioral sequence:
+Repeated MFA Failures → Followed by Successful Authentication
 ```kql
 let MFAFailures =
     SigninLogs
@@ -639,7 +661,6 @@ let MFAFailures =
         LastFailure = max(TimeGenerated)
         by UserPrincipalName
     | where FailureCount >= 3;
-
 let SuccessfulSignins =
     SigninLogs
     | where TimeGenerated > ago(1h)
@@ -649,7 +670,6 @@ let SuccessfulSignins =
         SuccessfulLogin = TimeGenerated,
         IPAddress,
         AppDisplayName;
-
 MFAFailures
 | join kind=inner SuccessfulSignins on UserPrincipalName
 | where SuccessfulLogin > LastFailure
@@ -663,10 +683,186 @@ MFAFailures
     AppDisplayName
 | order by SuccessfulLogin desc
 ```
+This second query correlates repeated failed MFA challenges with a later successful sign-in for the same identity.
+
+The detection logic becomes:
+	Repeated MFA Failures → Same Identity → Later Successful Sign-In → Investigate
+
+This approach is stronger because it evaluates a behavioral sequence rather than a single error condition.
+A successful sign-in following repeated MFA failures still does not automatically prove malicious activity. 
+It indicates a higher-risk authentication pattern that should be investigated in context with source IP addresses, device information, application access, geographic location, Conditional Access results, and user-reported MFA activity.
+
+## Detection Progression
+
+Basic Detection
+Repeated MFA Failures
+        ↓
+Threshold Exceeded
+        ↓
+Potential MFA Abuse
+
+Improved Detection
+Repeated MFA Failures
+        ↓
+Successful Authentication
+        ↓
+Higher-Risk Behavioral Pattern
+        ↓
+Investigation
+
+The important distinction is that the first query detects authentication failure volume, while the second detects a potentially suspicious sequence of authentication behavior.
+For the report, I would keep the second query as the primary example and treat the first as the introductory baseline. 
+It better supports the principle that useful detection should focus on behavior and context, not only on isolated log values.
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+8. RBAC Policy Violations - NEW
+
+RBAC violation detection determines whether a user performed a resource-management action that falls outside their expected authorization.
+
+Unlike simply detecting an administrative action, this detection requires an expected-access baseline. The baseline defines which identities are authorized to perform privileged operations.
+
+In this example, the approved administrators are defined first. AzureActivity is then examined for successful write or delete operations performed by identities outside that approved group.
 
 ```kql
-** Repeated MFA failures → followed by successful authentication**
+let ApprovedAdmins = dynamic([
+    "alice@contoso.com",
+    "securityadmin@contoso.com"
+]);
+AzureActivity
+| where TimeGenerated > ago(24h)
+| where ActivityStatusValue =~ "Success"
+| where OperationNameValue has_any (
+    "write",
+    "delete"
+)
+| where Caller !in~ (ApprovedAdmins)
+| project
+    TimeGenerated,
+    Caller,
+    OperationNameValue,
+    ResourceGroup,
+    SubscriptionId,
+    ActivityStatusValue
+| order by TimeGenerated desc
 ```
+`AzureActivit`y provides information about `Azure resource-management operations`, including the `identity responsible for an action`. 
+This allows observed activity to be compared against an established authorization baseline.
+
+The detection logic is:
+```kql
+	Observed Action → Identify Caller → Compare Against Expected Authorization → Flag Unexpected Activity
+```
+
+An important distinction is that the query does not prove that every non-approved action is malicious. It identifies activity that does not match the expected authorization model and therefore requires investigation.
+
+# IAM Detection Coverage
+
+The eight detection examples demonstrate how different IAM security conditions can be identified using Microsoft Sentinel telemetry.
+
+|---------------|-------------------|---------------------|
+|IAM Detection	|Primary KQL Source	|Detection Objective|
+|---------------|-------------------|---------------------|
+|Excessive privileges	|AuditLogs	|Identify potentially excessive role assignments|
+|Unauthorized administrative access	|AuditLogs	|Identify sensitive actions performed by unexpected actors|
+|Repeated failed authentication	|SigninLogs	|Detect repeated authentication failures|
+|Dormant account activity	|SigninLogs	|Detect renewed activity from previously inactive identities|
+|Privilege escalation	|AuditLogs	|Identify unexpected privileged-role assignments|
+|Disabled-account authentication	|AuditLogs + SigninLogs	|Detect authentication occurring after an account was disabled|
+|MFA fatigue	|SigninLogs	|Detect repeated MFA failures followed by successful authentication|
+|RBAC policy violation	|AzureActivity + authorization baseline	|Identify resource actions inconsistent with expected authorization|
+
+# Demonstrating Detection Flexibility
+
+These detections also demonstrate that the security concept is independent of the implementation technology.
+
+The methodology remains consistent:
+	IAM Principle → Security Behavior → Detection Logic → Evidence → Investigation
+	
+The same detection logic can then be implemented using different technologies:
+- Python can evaluate identity and authorization data programmatically
+- Microsoft Sentinel/KQL can analyze enterprise telemetry for evidence of the same security condition.
+
+For example:
+```kql
+IAM Principle
+     ↓
+Least Privilege
+     ↓
+Security Condition
+     ↓
+User performs an action outside expected authorization
+     ↓
+Detection Logic
+    ↙     ↘
+ Python   KQL
+    ↘     ↙
+   Evidence
+      ↓
+Investigation
+```
+
+This approach demonstrates an understanding of the underlying IAM security condition, rather than dependence on a particular programming language or security platform.
+
+One small but important improvement I made: I removed the implication that the `ApprovedAdmins` query is a complete RBAC validation system. It is really a simplified authorization baseline for the lab. Later, our more advanced version can compare actual entitlements, roles, resources, PIM eligibility, and other authorization data rather than relying on a hard-coded administrator list.
+That keeps the report technically accurate while still making the example easy to understand.
+
+
+# Lessons Learned
+
+The IAM implementation demonstrated that effective identity security extends beyond authentication and account administration. Identity activity must be evaluated against expected roles, privileges, access policies, and organizational requirements to determine whether an observed action is authorized.
+
+## Several key lessons emerged:
+
+Identity does not equal authorization. Successfully authenticating an identity establishes who the user is but does not determine what that identity should be permitted to access.
+Privilege alone is not evidence of compromise. Administrative activity must be compared against expected roles, approved privileges, PIM/PAM controls, and business requirements.
+Authorization requires a baseline. Detecting an RBAC violation requires knowledge of expected access. Without an entitlement baseline, telemetry may show what occurred but cannot always determine whether the action was authorized.
+Behavior provides stronger detection context than isolated events. For example, repeated MFA failures followed by successful authentication provide greater investigative value than simply counting MFA failures.
+Detection logic is portable. The same IAM security condition can be represented programmatically in Python or investigated through Microsoft Sentinel using KQL.
+Telemetry and identity state serve different purposes. Microsoft Entra and related identity services maintain identity and authorization state, while Sentinel/KQL provides visibility into recorded activity. Correlating these sources produces stronger security decisions.
+Continuous governance is necessary. Roles and entitlements that are appropriate today may become excessive as users change responsibilities, projects end, contractors leave, or systems evolve.
+
+The primary lesson is that effective IAM detection asks not simply “What happened?”, but:
+	“Was this identity authorized to perform this action, on this resource, under these conditions?”
+
+# Conclusion
+
+Identity and Access Management provides a foundational security layer for controlling how users, administrators, service identities, and external identities interact with enterprise resources.
+
+This implementation applied IAM principles across authentication, authorization, least privilege, RBAC, privileged access, governance, monitoring, and detection. Python demonstrated how IAM security conditions can be evaluated programmatically, while Microsoft Sentinel and KQL demonstrated how similar logic can be applied to enterprise telemetry.
+
+The detections developed for excessive privileges, unauthorized administrative access, repeated authentication failures, dormant account activity, privilege escalation, disabled-account authentication, MFA fatigue, and RBAC violations demonstrate a progression from basic event monitoring toward behavioral and authorization-aware detection.
+
+The resulting security model can be summarized as:
+
+Identity → Authenticate → Authorize → Control Privilege → Govern → Detect → Investigate → Respond
+
+The objective of IAM is therefore not simply to determine whether a user can sign in. It is to continuously ensure that the right identity has the right access to the right resource under the right conditions—and that deviations can be detected and investigated.
+
+
+# Framework Alignment
+
+For your report, I would show the alignment this way:
+
+Framework / Standard	How This IAM Project Aligns
+NIST Cybersecurity Framework (CSF) 2.0	Identity management, authentication, access control, monitoring, detection, and response support the Protect, Detect, Respond, and Govern functions.
+NIST SP 800-53	Maps strongly to Access Control (AC), Identification and Authentication (IA), Audit and Accountability (AU), and related security-control families.
+NIST SP 800-63 Digital Identity Guidelines	Provides guidance around digital identity, authentication, authenticator management, federation, and assurance.
+Zero Trust Architecture — NIST SP 800-207	Supports explicit verification, least privilege, contextual access decisions, and continuous evaluation rather than implicit trust.
+CIS Controls v8	Aligns particularly with Account Management, Access Control Management, Audit Log Management, and monitoring of security-relevant account activity.
+MITRE ATT&CK	Provides adversary-behavior mappings for techniques involving valid accounts, account manipulation, additional cloud roles, MFA abuse, and other identity-focused activity.
+
+There is also a useful way to position these rather than presenting them as six equivalent “frameworks”:
+
+Governance & Security Framework: NIST CSF 2.0
+Security Controls: NIST SP 800-53 / CIS Controls
+Digital Identity: NIST SP 800-63
+Architecture: NIST Zero Trust / SP 800-207
+Threat Behavior: MITRE ATT&CK
+
+That classification would look very professional in the report because it shows you understand what each framework is actually contributing, rather than putting a collection of framework logos at the bottom of an IAM project.
+
+For this particular project, I would make NIST CSF 2.0 the umbrella, with NIST 800-53 + 800-63 + Zero Trust underneath it, and use MITRE ATT&CK only when mapping the detection scenarios to adversary behavior.
+
 
 
 
