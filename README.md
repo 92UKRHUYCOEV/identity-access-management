@@ -120,9 +120,8 @@ The objective is not to manage user accounts. A mature IAM implementation establ
 That gives us a natural bridge from IAM administration → IAM security engineering → Sentinel/KQL detection rather than ending the project after configuring users, groups, and permissions.
 	“Testing should demonstrate not only that legitimate access succeeds, but also that unauthorized access is prevented and recorded.”
 	
-```python
-PYTHON DETECTION SCRIPTS
-```
+# PYTHON DETECTION SCRIPTS
+
 1. Detect Excessive Privileges
 ``` Python
 
@@ -383,6 +382,7 @@ This provides flexibility across standalone applications, automation workflows, 
 
 
 # KQL DETECTION SCRIPTS
+
 The following matching Microsoft Sentinel / KQL detection for the eight Python concepts.
 Microsoft currently documents:
 	• SigninLogs for authentication analysis
