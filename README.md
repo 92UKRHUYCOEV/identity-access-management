@@ -627,7 +627,8 @@ SigninLogs
 	```yaml
 	Account disabled → later successful authentication → investigate
 	```
-&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+
 ## 7. MFA Fatigue
 MFA fatigue detection looks for repeated multi-factor authentication challenges that may indicate an attacker is attempting to pressure a user into approving an unauthorized sign-in.
 Microsoft `Entra sign-in logs` record MFA-related authentication failures in `SigninLogs`. 
@@ -730,7 +731,8 @@ The important distinction is that the first query detects `authentication failur
 For the report, I kept the second query as the primary example and treated the first as the introductory baseline. 
 It better supports the principle that useful detection should focus on behavior and context, not only on isolated log values.
 
-&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+
 8. RBAC Policy Violations
 
 RBAC violation detection determines whether a user performed a `esource-management action` that falls outside their expected authorization.
@@ -806,7 +808,6 @@ For example:
 <p align="center">
 <img width="1133" height="1388" alt="understanding of the underlying IAM security condition" src="https://github.com/user-attachments/assets/e768a0d0-c373-4b11-bb42-7d8f99ffb920" />
 </p>
-
 
 This approach demonstrates an understanding of the underlying IAM security condition, rather than dependence on a particular programming language or security platform.
 
