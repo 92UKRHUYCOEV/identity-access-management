@@ -374,7 +374,7 @@ Underlying security logic remains consistent even when the implementation techno
 - **Microsoft Sentinel / KQL:** Query `SigninLogs`, group failed authentication attempts by user and time window, and identify accounts exceeding the detection threshold.
 
 The objective is to demonstrate:
-```python	
+```kql	
 	IAM Principle → Detection Logic → Python Implementation → KQL Implementation → Security Investigation
 ```
 
@@ -445,7 +445,7 @@ AuditLogs
 ```
 This demonstrates an important IAM concept:
 ```kql
-	Privileged action + actor not authorized = detection
+Privileged action + actor not authorized = detection
 ```
 Microsoft also uses `AuditLogs` to investigate sensitive administrative actions and possible privilege escalation.
 
