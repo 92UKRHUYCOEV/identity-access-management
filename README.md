@@ -122,7 +122,7 @@ That gives us a natural bridge from IAM administration → IAM security engineer
 	
 # PYTHON DETECTION SCRIPTS
 
-1. Detect Excessive Privileges
+## 1. Detect Excessive Privileges
 ``` Python
 
 user_roles = {
@@ -140,7 +140,7 @@ for user, roles in user_roles.items():
 This demonstrates least-privilege monitoring. Charlie has more permissions than the defined threshold and is flagged for review.
 ```
 
-2. Detect Unauthorized Administrative Access
+## 2. Detect Unauthorized Administrative Access
 ``` Python
 
 authorized_admins = ["alice", "security_admin"]
@@ -161,7 +161,7 @@ for event in login_events:
 This checks whether someone using an administrative role is actually on the approved administrator list.
 ```
 
-3. Detect Repeated Failed Logins
+## 3. Detect Repeated Failed Logins
 ``` Python
 
 login_events = [
@@ -188,7 +188,7 @@ for user, count in failed_logins.items():
 This models detection of password spraying, brute-force activity, or repeated authentication failures.
 ```
 
-4. Detect Dormant Account Usage
+## 4. Detect Dormant Account Usage
 ``` Python
 
 from datetime import datetime, timedelta
@@ -218,7 +218,7 @@ for account in accounts:
 This supports Identity Governance and Administration (IGA) by identifying accounts that may need disabling or review.
 ```
 
-5. Detect Privilege Escalation
+## 5. Detect Privilege Escalation
 ``` Python
 
 role_changes = [
@@ -250,7 +250,7 @@ for change in role_changes:
 This one is particularly useful for a cybersecurity portfolio because it detects a security-relevant change, rather than just validating configuration.
 ```
 
-6. Detect Disabled Account Authentication
+## 6. Detect Disabled Account Authentication
 ``` Python
 
 accounts = {
@@ -279,7 +279,7 @@ for event in login_events:
 A disabled account successfully authenticating would warrant immediate investigation.
 ```
 
-7. Detect MFA Fatigue Behavior
+## 7. Detect MFA Fatigue Behavior
 ``` Python
 
 mfa_events = [
@@ -311,7 +311,7 @@ for event in mfa_events:
 This is an especially strong IAM detection example because it connects authentication telemetry to attacker behavior.
 ```
 
-8. Detect Access Outside Normal Role Permissions
+## 8. Detect Access Outside Normal Role Permissions
 This expands the original RBAC example into an actual detection control.
 ``` Python
 
