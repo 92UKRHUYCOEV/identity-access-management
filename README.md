@@ -1,4 +1,4 @@
-# IAM-Framework
+# Identity Access Management (IAM)
 
 <img width="3258" height="1086" alt="image" src="https://github.com/user-attachments/assets/46176870-84b1-492b-a73d-b6b1bf991bd9" />
 
