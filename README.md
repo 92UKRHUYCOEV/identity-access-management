@@ -567,10 +567,10 @@ Conceptually:
 ```kql
 	Standard Identity → Privileged Role Assignment → Alert
 ```
-For a production analytic, we'd enrich this with approved change windows, Privileged Identity Management (PIM) activity, and known administrators rather than treating every privileged assignment as malicious.
+For a production analytic, we'd enrich this with approved change windows, `Privileged Identity Management (PIM) activity`, and known administrators rather than treating every privileged assignment as malicious.
 
 Now the logic is different:
-Privileged role assigned does not automatically equal malicious.
+	Privileged role assigned does not automatically equal malicious.
 
 Instead:
 ```yaml
@@ -625,7 +625,7 @@ SigninLogs
 	```yaml
 	Account disabled → later successful authentication → investigate
 	```
- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 ## 7. MFA Fatigue
 MFA fatigue detection looks for repeated multi-factor authentication challenges that may indicate an attacker is attempting to pressure a user into approving an unauthorized sign-in.
 Microsoft `Entra sign-in logs` record MFA-related authentication failures in `SigninLogs`. 
@@ -729,13 +729,14 @@ For the report, I kept the second query as the primary example and treated the f
 It better supports the principle that useful detection should focus on behavior and context, not only on isolated log values.
 
 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-8. RBAC Policy Violations - NEW
+8. RBAC Policy Violations
 
-RBAC violation detection determines whether a user performed a resource-management action that falls outside their expected authorization.
+RBAC violation detection determines whether a user performed a `esource-management action` that falls outside their expected authorization.
 
-Unlike simply detecting an administrative action, this detection requires an expected-access baseline. The baseline defines which identities are authorized to perform privileged operations.
+Unlike simply detecting an administrative action, this detection requires an `expected-access baseline`. 
+The baseline `defines which identities are authorized to perform privileged operations`.
 
-In this example, the approved administrators are defined first. AzureActivity is then examined for successful write or delete operations performed by identities outside that approved group.
+In this example, the approved administrators are defined first. `AzureActivity` is then examined for successful write or delete operations performed by identities outside that approved group.
 
 ```kql
 let ApprovedAdmins = dynamic([
@@ -759,6 +760,7 @@ AzureActivity
     ActivityStatusValue
 | order by TimeGenerated desc
 ```
+
 `AzureActivit`y provides information about `Azure resource-management operations`, including the `identity responsible for an action`. 
 This allows observed activity to be compared against an established authorization baseline.
 
@@ -767,7 +769,9 @@ The detection logic is:
 	Observed Action → Identify Caller → Compare Against Expected Authorization → Flag Unexpected Activity
 ```
 
-An important distinction is that the query does not prove that every non-approved action is malicious. It identifies activity that does not match the expected authorization model and therefore requires investigation.
+- An important distinction is that the query does not prove that every non-approved action is malicious. 
+- It identifies activity that does not match the expected authorization model and therefore requires investigation.
+
 
 # IAM Detection Coverage
 
@@ -785,8 +789,8 @@ The eight detection examples demonstrate how different IAM security conditions c
 |MFA fatigue	|SigninLogs	|Detect repeated MFA failures followed by successful authentication|
 |RBAC policy violation	|AzureActivity + authorization baseline	|Identify resource actions inconsistent with expected authorization|
 
-# Demonstrating Detection Flexibility
 
+# Demonstrating Detection Flexibility
 These detections also demonstrate that the security concept is independent of the implementation technology.
 
 The methodology remains consistent:
@@ -797,7 +801,9 @@ The same detection logic can then be implemented using different technologies:
 - Microsoft Sentinel/KQL can analyze enterprise telemetry for evidence of the same security condition.
 
 For example:
-```kql
+
+<img width="938" height="2362" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/1ecc23d7-b0ba-46cf-af94-d15f13bed08c" />
+
 IAM Principle
      ↓
 Least Privilege
@@ -813,7 +819,7 @@ Detection Logic
    Evidence
       ↓
 Investigation
-```
+
 
 This approach demonstrates an understanding of the underlying IAM security condition, rather than dependence on a particular programming language or security platform.
 
