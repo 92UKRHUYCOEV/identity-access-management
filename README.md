@@ -664,10 +664,9 @@ MFAFailures
 | order by SuccessfulLogin desc
 ```
 
-
-<font color="orange">** Repeated MFA failures → followed by successful authentication**</font>
-
-
+```kql
+** Repeated MFA failures → followed by successful authentication**
+```
 
 
 
