@@ -389,7 +389,7 @@ Microsoft currently documents:
 	• AuditLogs for identity/directory changes
 	• AzureActivity for Azure resource operations.
 
-1. Excessive Privileges: This looks for users receiving an unusually high number of role assignments.
+## 1. Excessive Privileges: This looks for users receiving an unusually high number of role assignments.
 ```kql
 
 AuditLogs
@@ -511,7 +511,7 @@ This detects something much more security-relevant:
 - Your actual usable lookback depends on how much SigninLogs history your workspace retains.
 
 
-## . Privilege Escalation
+## 5. Privilege Escalation
 A production design would only treat a privileged-role assignment as suspicious only when context increases the risk. 
 That context can include whether the actor is an approved administrator, whether the change occurred through PIM, 
 whether it happened during an approved change window, and whether the assignment was permanent or unexpected.
@@ -626,6 +626,46 @@ SigninLogs
 	Account disabled → later successful authentication → investigate
 	```
 
+## 7. MFA Fatigue
+Microsoft documents ResultType == 50074 for failed MFA challenges.
+```kql
+let MFAFailures =
+    SigninLogs
+    | where TimeGenerated > ago(1h)
+    | where ResultType == 50074
+    | summarize
+        FailureCount = count(),
+        FirstFailure = min(TimeGenerated),
+        LastFailure = max(TimeGenerated)
+        by UserPrincipalName
+    | where FailureCount >= 3;
+
+let SuccessfulSignins =
+    SigninLogs
+    | where TimeGenerated > ago(1h)
+    | where ResultType == 0
+    | project
+        UserPrincipalName,
+        SuccessfulLogin = TimeGenerated,
+        IPAddress,
+        AppDisplayName;
+
+MFAFailures
+| join kind=inner SuccessfulSignins on UserPrincipalName
+| where SuccessfulLogin > LastFailure
+| project
+    UserPrincipalName,
+    FailureCount,
+    FirstFailure,
+    LastFailure,
+    SuccessfulLogin,
+    IPAddress,
+    AppDisplayName
+| order by SuccessfulLogin desc
+```
+```python
+** Repeated MFA failures → followed by successful authentication**
+```
 
 
 
