@@ -353,7 +353,8 @@ This produces the kind of detection logic in the IAM project:
 ```python	
 	Identity → Role → Expected Permission → Observed Action → Detection
 ```
-Python IAM Detection Library:
+```kql
+Python IAM Detection Script Library:
 	1. detect_excessive_privileges.py
 	2. detect_unauthorized_admin.py
 	3. detect_failed_logins.py
@@ -362,16 +363,16 @@ Python IAM Detection Library:
 	6. detect_disabled_account_authentication.py
 	7. detect_mfa_fatigue.py
 	8. detect_rba_policy_violations.py
-
+```
 Each IAM security concept can be implemented first in Python and then translated into an equivalent Microsoft Sentinel KQL detection.
 ```python	
 	Python logic → Enterprise telemetry → KQL detection rule
 ```
 
 Underlying security logic remains consistent even when the implementation technology changes.
-**Security Concept:** Detect repeated failed authentications
-**Python:** Analyze authentication records, count failed attempts by user, and generate an alert when a defined threshold is exceeded.
-**Microsoft Sentinel / KQL:** Query `SigninLogs`, group failed authentication attempts by user and time window, and identify accounts exceeding the detection threshold.
+- **Security Concept:** Detect repeated failed authentications
+- **Python:** Analyze authentication records, count failed attempts by user, and generate an alert when a defined threshold is exceeded.
+- **Microsoft Sentinel / KQL:** Query `SigninLogs`, group failed authentication attempts by user and time window, and identify accounts exceeding the detection threshold.
 
 The objective is to demonstrate:
 ```python	
