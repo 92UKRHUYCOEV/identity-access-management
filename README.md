@@ -733,7 +733,7 @@ It better supports the principle that useful detection should focus on behavior 
 
 
 
-8. RBAC Policy Violations
+## 8. RBAC Policy Violations
 
 RBAC violation detection determines whether a user performed a `esource-management action` that falls outside their expected authorization.
 
@@ -821,16 +821,18 @@ The IAM implementation demonstrated that effective identity security extends bey
 
 ## Several key lessons emerged:
 
-Identity does not equal authorization. Successfully authenticating an identity establishes who the user is but does not determine what that identity should be permitted to access.
-Privilege alone is not evidence of compromise. Administrative activity must be compared against expected roles, approved privileges, PIM/PAM controls, and business requirements.
-Authorization requires a baseline. Detecting an RBAC violation requires knowledge of expected access. Without an entitlement baseline, telemetry may show what occurred but cannot always determine whether the action was authorized.
-Behavior provides stronger detection context than isolated events. For example, repeated MFA failures followed by successful authentication provide greater investigative value than simply counting MFA failures.
-Detection logic is portable. The same IAM security condition can be represented programmatically in Python or investigated through Microsoft Sentinel using KQL.
-Telemetry and identity state serve different purposes. Microsoft Entra and related identity services maintain identity and authorization state, while Sentinel/KQL provides visibility into recorded activity. Correlating these sources produces stronger security decisions.
-Continuous governance is necessary. Roles and entitlements that are appropriate today may become excessive as users change responsibilities, projects end, contractors leave, or systems evolve.
+- Identity does not equal authorization. Successfully authenticating an identity establishes who the user is but does not determine what that identity should be permitted to access.
+- Privilege alone is not evidence of compromise. Administrative activity must be compared against expected roles, approved privileges, PIM/PAM controls, and business requirements.
+- Authorization requires a baseline. Detecting an RBAC violation requires knowledge of expected access. Without an entitlement baseline, telemetry may show what occurred but cannot always determine whether the action was authorized.
+-Behavior provides stronger detection context than isolated events. For example, repeated MFA failures followed by successful authentication provide greater investigative value than simply counting MFA failures.
+- Detection logic is portable. The same IAM security condition can be represented programmatically in Python or investigated through Microsoft Sentinel using KQL.
+- Telemetry and identity state serve different purposes. Microsoft Entra and related identity services maintain identity and authorization state, while Sentinel/KQL provides visibility into recorded activity. Correlating these sources produces stronger security decisions.
+- Continuous governance is necessary. Roles and entitlements that are appropriate today may become excessive as users change responsibilities, projects end, contractors leave, or systems evolve.
 
 The primary lesson is that effective IAM detection asks not simply “What happened?”, but:
+```yaml
 	“Was this identity authorized to perform this action, on this resource, under these conditions?”
+```
 
 # Conclusion
 
@@ -842,14 +844,14 @@ The detections developed for excessive privileges, unauthorized administrative a
 
 The resulting security model can be summarized as:
 
+```kql
 Identity → Authenticate → Authorize → Control Privilege → Govern → Detect → Investigate → Respond
+```
 
 The objective of IAM is therefore not simply to determine whether a user can sign in. It is to continuously ensure that the right identity has the right access to the right resource under the right conditions—and that deviations can be detected and investigated.
 
 
 # Framework Alignment
-
-For your report, I would show the alignment this way:
 
 Framework / Standard	How This IAM Project Aligns
 NIST Cybersecurity Framework (CSF) 2.0	Identity management, authentication, access control, monitoring, detection, and response support the Protect, Detect, Respond, and Govern functions.
