@@ -138,9 +138,9 @@ allowed_role_count = 2
 for user, roles in user_roles.items():
     if len(roles) > allowed_role_count:
         print(f"[ALERT] {user} may have excessive privileges: {roles}")
-
-This demonstrates least-privilege monitoring. Charlie has more permissions than the defined threshold and is flagged for review.
 ```
+This demonstrates least-privilege monitoring. Charlie has more permissions than the defined threshold and is flagged for review.
+
 
 ## 2. Detect Unauthorized Administrative Access
 ``` Python
@@ -159,9 +159,9 @@ for event in login_events:
             f"[ALERT] Unauthorized administrative access detected: "
             f"{event['user']}"
         )
-
-This checks whether someone using an administrative role is actually on the approved administrator list.
 ```
+This checks whether someone using an administrative role is actually on the approved administrator list.
+
 
 ## 3. Detect Repeated Failed Logins
 ``` Python
@@ -186,9 +186,9 @@ for user, count in failed_logins.items():
             f"[ALERT] Multiple failed authentication attempts: "
             f"{user} ({count} failures)"
         )
-
-This models detection of password spraying, brute-force activity, or repeated authentication failures.
 ```
+This models detection of password spraying, brute-force activity, or repeated authentication failures.
+
 
 ## 4. Detect Dormant Account Usage
 ``` Python
@@ -216,9 +216,9 @@ for account in accounts:
             f"[ALERT] Dormant account detected: "
             f"{account['user']} inactive for {days_inactive} days"
         )
-
-This supports Identity Governance and Administration (IGA) by identifying accounts that may need disabling or review.
 ```
+This supports Identity Governance and Administration (IGA) by identifying accounts that may need disabling or review.
+
 
 ## 5. Detect Privilege Escalation
 ``` Python
@@ -248,9 +248,9 @@ for change in role_changes:
             f"{change['user']} changed from "
             f"{change['old_role']} to {change['new_role']}"
         )
-
-This one is particularly useful for a cybersecurity portfolio because it detects a security-relevant change, rather than just validating configuration.
 ```
+This one is particularly useful for a cybersecurity portfolio because it detects a security-relevant change, rather than just validating configuration.
+
 
 ## 6. Detect Disabled Account Authentication
 ``` Python
