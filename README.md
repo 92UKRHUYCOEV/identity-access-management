@@ -417,8 +417,8 @@ Detection logic:  User → Role assignments → Count privileges → Flag excess
 The threshold of 3 is an example, not a universal definition of excessive privilege. In production, compare assignments against the user's expected role.
 
 
-## 2. Unauthorized Administrative Access
-Here we define an approved administrator baseline and detect privileged operations performed by anyone outside it.
+## 2. Unauthorized Administrative Access: Here we define an approved administrator baseline and detect privileged operations performed by anyone outside it.
+
 ```kql
 
 let ApprovedAdmins = dynamic([
