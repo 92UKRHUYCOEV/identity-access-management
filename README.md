@@ -855,13 +855,14 @@ The objective of IAM is therefore not simply to determine whether a user can sig
 
 # Framework Alignment
 
-Framework / Standard	How This IAM Project Aligns
-NIST Cybersecurity Framework (CSF) 2.0	Identity management, authentication, access control, monitoring, detection, and response support the Protect, Detect, Respond, and Govern functions.
-NIST SP 800-53	Maps strongly to Access Control (AC), Identification and Authentication (IA), Audit and Accountability (AU), and related security-control families.
-NIST SP 800-63 Digital Identity Guidelines	Provides guidance around digital identity, authentication, authenticator management, federation, and assurance.
-Zero Trust Architecture — NIST SP 800-207	Supports explicit verification, least privilege, contextual access decisions, and continuous evaluation rather than implicit trust.
-CIS Controls v8	Aligns particularly with Account Management, Access Control Management, Audit Log Management, and monitoring of security-relevant account activity.
-MITRE ATT&CK	Provides adversary-behavior mappings for techniques involving valid accounts, account manipulation, additional cloud roles, MFA abuse, and other identity-focused activity.
+|Framework / Standard	|How This IAM Project Aligns |
+|-----------------------|----------------------------|
+|NIST Cybersecurity Framework (CSF) 2.0	|Identity management, authentication, access control, monitoring, detection, and response support the Protect, Detect, Respond, and Govern functions. |
+|NIST SP 800-53	|Maps strongly to Access Control (AC), Identification and Authentication (IA), Audit and Accountability (AU), and related security-control families. |
+|NIST SP 800-63 Digital Identity Guidelines	|Provides guidance around digital identity, authentication, authenticator management, federation, and assurance. |
+|Zero Trust Architecture — NIST SP 800-207	|Supports explicit verification, least privilege, contextual access decisions, and continuous evaluation rather than implicit trust. |
+|CIS Controls v8	|Aligns particularly with Account Management, Access Control Management, Audit Log Management, and monitoring of security-relevant account activity. |
+|MITRE ATT&CK	|Provides adversary-behavior mappings for techniques involving valid accounts, account manipulation, additional cloud roles, MFA abuse, and other identity-focused activity. |
 
 There is also a useful way to position these rather than presenting them as six equivalent “frameworks”:
 
@@ -870,8 +871,6 @@ There is also a useful way to position these rather than presenting them as six 
 - Digital Identity: NIST SP 800-63
 - Architecture: NIST Zero Trust / SP 800-207
 - Threat Behavior: MITRE ATT&CK
-
-That classification would look very professional in the report because it shows you understand what each framework is actually contributing, rather than putting a collection of framework logos at the bottom of an IAM project.
 
 For this particular project, I would make NIST CSF 2.0 the umbrella, with NIST 800-53 + 800-63 + Zero Trust underneath it, and use MITRE ATT&CK only when mapping the detection scenarios to adversary behavior.
 
