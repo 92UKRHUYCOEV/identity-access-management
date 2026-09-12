@@ -782,7 +782,6 @@ Observed Action → Identify Caller → Compare Against Expected Authorization �
 
 The eight detection examples demonstrate how different IAM security conditions can be identified using Microsoft Sentinel telemetry.
 
-|---------------|-------------------|---------------------|
 |IAM Detection	|Primary KQL Source	|Detection Objective|
 |---------------|-------------------|---------------------|
 |Excessive privileges	|AuditLogs	|Identify potentially excessive role assignments|
@@ -799,7 +798,7 @@ The eight detection examples demonstrate how different IAM security conditions c
 These detections also demonstrate that the security concept is independent of the implementation technology.
 
 The methodology remains consistent:
-```kql
+```bash
 	IAM Principle → Security Behavior → Detection Logic → Evidence → Investigation
 ```
 
