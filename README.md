@@ -834,7 +834,7 @@ The IAM implementation demonstrated that effective identity security extends bey
 
 The primary lesson is that effective IAM detection asks not simply “What happened?”, but:
 ```bash
-	Was this identity authorized to perform this action, on this resource, under these conditions?
+	"Was this identity authorized to perform this action, on this resource, under these conditions?"
 ```
 
 # Conclusion
@@ -847,7 +847,7 @@ The detections developed for excessive privileges, unauthorized administrative a
 
 The resulting security model can be summarized as:
 
-```kql
+```bash
 Identity → Authenticate → Authorize → Control Privilege → Govern → Detect → Investigate → Respond
 ```
 
