@@ -277,9 +277,9 @@ for event in login_events:
         print(
             f"[CRITICAL] Disabled account successfully authenticated: {user}"
         )
-
-A disabled account successfully authenticating would warrant immediate investigation.
 ```
+A disabled account successfully authenticating would warrant immediate investigation.
+
 
 ## 7. Detect MFA Fatigue Behavior
 ``` Python
@@ -309,9 +309,9 @@ for event in mfa_events:
             f"{user} approved MFA after "
             f"{mfa_denials[user]} denials"
         )
-
-This is an especially strong IAM detection example because it connects authentication telemetry to attacker behavior.
 ```
+This is an especially strong IAM detection example because it connects authentication telemetry to attacker behavior.
+
 
 ## 8. Detect Access Outside Normal Role Permissions
 This expands the original RBAC example into an actual detection control.
@@ -354,6 +354,7 @@ This produces the kind of detection logic in the IAM project:
 ```python	
 	Identity → Role → Expected Permission → Observed Action → Detection
 ```
+
 ```kql
 Python IAM Detection Script Library:
 	1. detect_excessive_privileges.py
@@ -366,6 +367,7 @@ Python IAM Detection Script Library:
 	8. detect_rba_policy_violations.py
 ```
 Each IAM security concept can be implemented first in Python and then translated into an equivalent Microsoft Sentinel KQL detection.
+
 ```python	
 	Python logic → Enterprise telemetry → KQL detection rule
 ```
@@ -779,7 +781,6 @@ Observed Action → Identify Caller → Compare Against Expected Authorization �
 
 
 # IAM Detection Coverage
-
 The eight detection examples demonstrate how different IAM security conditions can be identified using Microsoft Sentinel telemetry.
 
 |IAM Detection	|Primary KQL Source	|Detection Objective|
@@ -818,11 +819,9 @@ That keeps the report technically accurate while still making the example easy t
 
 
 # Lessons Learned
-
 The IAM implementation demonstrated that effective identity security extends beyond authentication and account administration. Identity activity must be evaluated against expected roles, privileges, access policies, and organizational requirements to determine whether an observed action is authorized.
 
 ## Several key lessons emerged:
-
 - Identity does not equal authorization. Successfully authenticating an identity establishes who the user is but does not determine what that identity should be permitted to access.
 - Privilege alone is not evidence of compromise. Administrative activity must be compared against expected roles, approved privileges, PIM/PAM controls, and business requirements.
 - Authorization requires a baseline. Detecting an RBAC violation requires knowledge of expected access. Without an entitlement baseline, telemetry may show what occurred but cannot always determine whether the action was authorized.
@@ -837,7 +836,6 @@ The primary lesson is that effective IAM detection asks not simply “What happe
 ```
 
 # Conclusion
-
 Identity and Access Management provides a foundational security layer for controlling how users, administrators, service identities, and external identities interact with enterprise resources.
 
 This implementation applied IAM principles across authentication, authorization, least privilege, RBAC, privileged access, governance, monitoring, and detection. Python demonstrated how IAM security conditions can be evaluated programmatically, while Microsoft Sentinel and KQL demonstrated how similar logic can be applied to enterprise telemetry.
