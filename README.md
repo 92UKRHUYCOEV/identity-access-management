@@ -769,8 +769,9 @@ AzureActivity
 This allows observed activity to be compared against an established authorization baseline.
 
 The detection logic is:
+
 ```kql
-	Observed Action → Identify Caller → Compare Against Expected Authorization → Flag Unexpected Activity
+Observed Action → Identify Caller → Compare Against Expected Authorization → Flag Unexpected Activity
 ```
 
 - An important distinction is that the query does not prove that every non-approved action is malicious. 
@@ -798,8 +799,10 @@ The eight detection examples demonstrate how different IAM security conditions c
 These detections also demonstrate that the security concept is independent of the implementation technology.
 
 The methodology remains consistent:
+```kql
 	IAM Principle → Security Behavior → Detection Logic → Evidence → Investigation
-	
+```
+
 The same detection logic can then be implemented using different technologies:
 - Python can evaluate identity and authorization data programmatically
 - Microsoft Sentinel/KQL can analyze enterprise telemetry for evidence of the same security condition.
@@ -830,8 +833,8 @@ The IAM implementation demonstrated that effective identity security extends bey
 - Continuous governance is necessary. Roles and entitlements that are appropriate today may become excessive as users change responsibilities, projects end, contractors leave, or systems evolve.
 
 The primary lesson is that effective IAM detection asks not simply “What happened?”, but:
-```yaml
-	“Was this identity authorized to perform this action, on this resource, under these conditions?”
+```bash
+	Was this identity authorized to perform this action, on this resource, under these conditions?
 ```
 
 # Conclusion
