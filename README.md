@@ -9,111 +9,43 @@
 	Identity → Authentication → Authorization → Privileged Access → Monitoring → Detection → Response → Automate
 ```
 
-# Implementing Identity and Access Management (IAM)
+# IAM Implementation Context
 
-Implementing Identity and Access Management (IAM) is essential for protecting organizational resources, enforcing least privilege, reducing unauthorized access, and supporting regulatory compliance. 
-An effective IAM program establishes controls across the complete identity lifecycle—from identity creation and authentication through authorization, governance, monitoring, and eventual de-provisioning.
+Identity and Access Management (IAM) controls how identities authenticate, what resources they can access, how privileges are governed, and how identity activity is monitored.
+This project approaches IAM from a security-engineering and detection perspective, using least privilege, MFA, RBAC, Conditional Access, privileged-access management, and identity lifecycle governance as the security foundation.
 
-## 1. Define the IAM Strategy
-Establish the objectives and scope of the IAM program before implementing technical controls.
+## Core Principle
+```Python
+Identity does not equal authorization.
+```
+	
+Successful authentication establishes identity, but does not establish that every subsequent action is authorized. Activity must be evaluated against expected roles, privileges, resources, and access policies.
 
-* Identify key stakeholders across IT, cybersecurity, compliance, and business units.
-* Define IAM objectives aligned with organizational and security requirements.
-* Establish requirements for authentication, authorization, identity lifecycle management, and governance.
-* Develop an IAM roadmap defining implementation phases, priorities, resources, and timelines.
-* Identify regulatory and compliance requirements that influence identity controls.
+Detection Methodology
+IAM Principle
+↓
+Expected Behavior
+↓
+Observed Telemetry
+↓
+Detection Logic
+↓
+Evidence
+↓
+Investigation
+	```yaml
+	Behavior provides stronger detection context than isolated events.
+	```
+Python demonstrates the detection logic programmatically, while Microsoft Sentinel and KQL apply that logic to enterprise identity telemetry.
 
-A clearly defined strategy helps prevent fragmented access policies and inconsistent security controls.
+The central investigative question is:
+	```yaml
+	Was this identity authorized to perform this action, on this resource, under these conditions?
+	```
 
-
-## 2. Assess the Current Security Posture
-Evaluate the existing identity environment to establish a security baseline and identify access-related risks.
-
-* Inventory identities, accounts, roles, groups, applications, and privileged accounts.
-* Review existing authentication and authorization controls.
-* Identify excessive permissions, dormant accounts, orphaned identities, and privilege escalation risks.
-* Review current provisioning and de-provisioning processes.
-* Classify systems and data according to sensitivity and business impact.
-* Evaluate whether CIEM capabilities are required for complex cloud environments.
-
-The assessment establishes the gap between the current environment and the desired IAM security posture.
-
-
-## 3. Design Access and Authentication Policies
-Define how identities authenticate and what resources they are permitted to access.
-
-* Implement Role-Based Access Control (RBAC) or Attribute-Based Access Control (ABAC) where appropriate.
-* Apply the principle of least privilege.
-* Enforce Multi-Factor Authentication (MFA) for sensitive and privileged access.
-* Establish Conditional Access or equivalent risk-based access controls.
-* Separate standard user and administrative privileges.
-* Define privileged-access requirements and approval processes.
-* Align authentication and identity assurance requirements with applicable standards such as NIST SP 800-63.
-
-Access should be granted according to demonstrated business requirements rather than convenience.
-
-
-## 4. Select and Deploy the IAM Architecture
-Determine how IAM services will operate across the organization's technology environment.
-
-* Select cloud, on-premises, or hybrid identity architecture based on business and security requirements.
-* Implement centralized authentication and authorization where practical.
-* Provide Single Sign-On (SSO) for approved applications.
-* Integrate IAM with cloud infrastructure, SaaS applications, on-premises systems, and development environments.
-* Implement privileged identity and access management controls.
-* Validate interoperability across hybrid or multi-cloud environments.
-
-Deployment should begin with a controlled pilot before expanding to production environments.
-
-
-## 5. Integrate and Validate IAM Controls
-Integrate the IAM platform with organizational systems and verify that security controls operate as intended.
-
-* Connect applications, infrastructure, and security monitoring systems.
-* Test authentication, authorization, SSO, and MFA.
-* Verify RBAC/ABAC assignments and least-privilege enforcement.
-* Test provisioning and de-provisioning workflows.
-* Validate privileged-access restrictions.
-* Test unauthorized and abnormal access scenarios.
-* Provide user and administrator training before full deployment.
-
-Testing should demonstrate not only that legitimate access succeeds, but also that unauthorized access is prevented and recorded.
-
-
-## 6. Automate Identity Governance
-Implement Identity Governance and Administration (IGA) to manage identities throughout their lifecycle.
-
-* Automate user provisioning and de-provisioning.
-* Establish Joiner, Mover, and Leaver (JML) processes.
-* Conduct periodic access reviews and certifications.
-* Automatically identify dormant or unnecessary accounts.
-* Implement approval workflows for sensitive access.
-* Review privileged-role assignments regularly.
-* Maintain audit records of identity and access changes.
-
-Automation reduces administrative error and limits the time unnecessary privileges remain active.
-
-
-## 7. Monitor, Detect, and Continuously Improve
-
-IAM security continues after deployment. Identity activity should be continuously monitored and controls adjusted as risks change.
-The end goal is to automate as much as possible, with recurring analysis to update existing and new automation rules.
-
-* Monitor authentication and authorization activity.
-* Detect repeated authentication failures and MFA abuse.
-* Identify anomalous sign-ins and impossible or unusual access patterns.
-* Monitor privilege assignments and administrative-role changes.
-* Detect unauthorized access attempts.
-* Conduct periodic vulnerability assessments and penetration testing.
-* Track IAM security metrics and Key Performance Indicators (KPIs).
-* Measure time to provision, modify, and revoke access.
-* Review access violations and identity-related security incidents.
-* Continuously refine controls as threats, technology, and compliance requirements evolve.
-
-Identity Security Posture Management (ISPM) can provide an additional continuous-assessment layer for identifying identity configuration weaknesses, excessive privileges, and emerging identity risks.
 
 ## IAM Implementation Lifecycle
-```python
+```Python
 	PLAN → ASSESS → DESIGN → DEPLOY → GOVERN → MONITOR → IMPROVE → AUTOMATE
 ```
 
