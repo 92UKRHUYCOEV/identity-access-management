@@ -476,8 +476,8 @@ Microsoft documents ResultType != 0 as a method for querying failed sign-ins.
 
 
 ## 4. Dormant Account Activity
-This one is more interesting because merely finding a dormant account isn't the same as detecting activity from a dormant account.
-```kql
+Dormant-account detection identifies identities that become active after an extended period of inactivity.
+```KQL
 
 let HistoricalSignins =
     SigninLogs
@@ -485,7 +485,6 @@ let HistoricalSignins =
     | where ResultType == 0
     | summarize LastHistoricalLogin = max(TimeGenerated)
         by UserPrincipalName;
-
 let RecentSignins =
     SigninLogs
     | where TimeGenerated > ago(24h)
@@ -495,7 +494,6 @@ let RecentSignins =
         SourceIP = any(IPAddress),
         Application = any(AppDisplayName)
         by UserPrincipalName;
-
 RecentSignins
 | join kind=leftouter HistoricalSignins on UserPrincipalName
 | extend DaysSincePreviousLogin =
@@ -509,31 +507,35 @@ RecentSignins
     SourceIP,
     Application
 | order by DaysSincePreviousLogin desc
+Detection Logic
+Previously Inactive Identity
+↓
+Successful Sign-In Detected
+↓
+90+ Days Since Previous Login
+↓
+Dormant Account Reactivated
+↓
+Investigate
 ```
 
-This detects something much more security-relevant:
-- A previously inactive identity suddenly became active.
-- Your actual usable lookback depends on how much SigninLogs history your workspace retains.
+The usable lookback depends on the retention period available in SigninLogs.
 
 
 ## 5. Privilege Escalation
-A production design would only treat a privileged-role assignment as suspicious only when context increases the risk. 
-That context can include whether the actor is an approved administrator, whether the change occurred through PIM, 
-whether it happened during an approved change window, and whether the assignment was permanent or unexpected.
-```kql
+Privilege escalation detection identifies unexpected assignments of privileged roles. Higher-risk conditions include assignments made outside PIM, by unexpected administrators, or outside approved change windows.
 
+```kql
 let ApprovedAdmins = dynamic([
     "securityadmin@contoso.com",
     "iamadmin@contoso.com"
 ]);
-
 let PrivilegedRoles = dynamic([
     "Global Administrator",
     "Privileged Role Administrator",
     "Security Administrator",
     "User Administrator"
 ]);
-
 AuditLogs
 | where TimeGenerated > ago(24h)
 | where OperationName has_any (
@@ -543,11 +545,14 @@ AuditLogs
 )
 | extend Actor =
     tostring(InitiatedBy.user.userPrincipalName)
+| extend Identity =
+    tostring(InitiatedBy.app.displayName)
 | extend TargetUser =
     tostring(TargetResources[0].userPrincipalName)
 | extend RoleName =
     tostring(TargetResources[0].displayName)
 | where RoleName in~ (PrivilegedRoles)
+| where Identity != "MS-PIM"
 | extend ApprovedAdministrator =
     Actor in~ (ApprovedAdmins)
 | extend OutsideChangeWindow =
@@ -559,6 +564,7 @@ AuditLogs
 | project
     TimeGenerated,
     Actor,
+    Identity,
     TargetUser,
     RoleName,
     ApprovedAdministrator,
@@ -568,25 +574,20 @@ AuditLogs
 | order by TimeGenerated desc
 ```
 
-Conceptually:
-```kql
-	Standard Identity → Privileged Role Assignment → Alert
-```
-For a production analytic, we'd enrich this with approved change windows, `Privileged Identity Management (PIM) activity`, and known administrators rather than treating every privileged assignment as malicious.
-
-Now the logic is different:
-	Privileged role assigned does not automatically equal malicious.
-
-Instead:
 ```yaml
-**Privileged role assignment
-	• unexpected actor 
-	• unusual timing 
-	• no approved workflow
-= higher-confidence privilege-escalation detection** 
+Detection Logic
+Privileged Role Assignment
+↓
+Exclude Expected PIM Activity
+↓
+Evaluate Actor and Timing
+↓
+Unexpected Privileged Assignment
+↓
+Investigate
 ```
-- PIM makes this even stronger. 
-- A normal PIM activation may be expected, while a direct permanent assignment to Global Administrator outside PIM would deserve substantially more scrutiny.
+
+A privileged-role assignment does not automatically indicate malicious activity. Direct or unexpected assignments outside normal PIM and administrative workflows warrant greater scrutiny.
 
 
 ## 6. Disabled-Account Authentication
