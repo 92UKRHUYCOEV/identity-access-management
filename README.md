@@ -481,6 +481,7 @@ This now aligns with the revised RBAC KQL by focusing on specific sensitive acti
 
 
 ## 9. Detect OAuth / Illicit Consent Grant Abuse
+This matches the KQL concept for OAuth / Illicit Consent Grant Abuse — T1528.
 
 ```kql
 high_risk_permissions = [
@@ -529,17 +530,49 @@ High-Risk Permission Detected
 Investigate
 ```
 
-This matches the KQL concept for OAuth / Illicit Consent Grant Abuse — T1528.
+## 10. Detect Service Principal Credential Abuse
+This matches the KQL concept for Service Principal Credential Abuse — T1098.001.
 
+```kql
+approved_admins = [
+    "security_admin",
+    "iam_admin"
+]
 
+credential_events = [
+    {
+        "actor": "security_admin",
+        "service_principal": "BackupAutomation",
+        "credential_type": "certificate"
+    },
+    {
+        "actor": "unknown_admin",
+        "service_principal": "FinanceApp",
+        "credential_type": "client_secret"
+    }
+]
 
+for event in credential_events:
+    if event["actor"] not in approved_admins:
+        print(
+            f"[ALERT] Unexpected service principal credential change: "
+            f"{event['actor']} added a {event['credential_type']} "
+            f"to {event['service_principal']}"
+        )
+```
 
-
-
-
-
-
-
+```yaml
+Detection Logic
+Service Principal Credential Added
+↓
+Identify Actor
+↓
+Compare Against Approved Administrators
+↓
+Unexpected Credential Change
+↓
+Investigate for Persistence
+```
 
 This produces the kind of detection logic in the IAM project:
 ```python	
@@ -555,7 +588,9 @@ Python IAM Detection Script Library:
 	5. detect_privilege_escalation.py
 	6. detect_disabled_account_authentication.py
 	7. detect_mfa_fatigue.py
-	8. detect_rba_policy_violations.py
+	8. detect_rbac_policy_violations.py
+	9. detect_oauth_illicit_grant_abuse.py
+   10. detect_service_credential_abuse.py
 ```
 Each IAM security concept can be implemented first in Python and then translated into an equivalent Microsoft Sentinel KQL detection.
 
@@ -683,7 +718,6 @@ Threshold Exceeded
 ↓
 Investigate
 ```
-
 Using CorrelationId reduces double counting when multiple SigninLogs records belong to the same authentication flow. 
 
 
@@ -735,7 +769,6 @@ Dormant Account Reactivated
 ↓
 Investigate
 ```
-
 The usable lookback depends on the retention period available in SigninLogs.
 
 
@@ -803,7 +836,6 @@ Unexpected Privileged Assignment
 ↓
 Investigate
 ```
-
 A privileged-role assignment does not automatically indicate malicious activity. Direct or unexpected assignments outside normal PIM and administrative workflows warrant greater scrutiny.
 
 
