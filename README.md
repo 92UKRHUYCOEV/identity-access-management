@@ -590,10 +590,30 @@ Instead:
 
 
 ## 6. Disabled-Account Authentication
-This is a good example of correlation, because SigninLogs alone doesn't establish when the account was disabled.
-First identify account-disable activity, then look for a subsequent successful authentication.
-```kql
+Disabled-account detection can be approached at two levels.
 
+Baseline Detection
+ResultType == 50057 in SigninLogs identifies sign-in attempts involving a disabled account.
+Question: Did a disabled account attempt to authenticate?
+
+```kql
+SigninLogs
+| where TimeGenerated > ago(24h)
+| where ResultType == 50057
+| project
+    TimeGenerated,
+    UserPrincipalName,
+    IPAddress,
+    AppDisplayName,
+    Location,
+    ResultDescription
+| order by TimeGenerated desc
+```
+
+Advanced Detection
+A stronger detection correlates the account-disable event in AuditLogs with a later successful authentication in SigninLogs.
+
+```kql
 let DisabledAccounts =
     AuditLogs
     | where TimeGenerated > ago(30d)
@@ -602,13 +622,10 @@ let DisabledAccounts =
     | extend
         PropertyName = tostring(Property.displayName),
         NewValue = tostring(Property.newValue),
-        DisabledUser =
-            tostring(TargetResources[0].userPrincipalName)
+        DisabledUser = tostring(TargetResources[0].userPrincipalName)
     | where PropertyName == "AccountEnabled"
     | where NewValue contains "false"
-    | summarize DisabledTime = max(TimeGenerated)
-        by DisabledUser;
-
+    | summarize DisabledTime = max(TimeGenerated) by DisabledUser;
 SigninLogs
 | where TimeGenerated > ago(30d)
 | where ResultType == 0
@@ -625,11 +642,22 @@ SigninLogs
 | order by TimeGenerated desc
 ```
 
-- Microsoft's Sentinel account-action logic similarly uses `AuditLog`s and the `AccountEnabled` property to identify account-disable activity.
-- This correlation is a particularly good portfolio example:
-	```yaml
-	Account disabled → later successful authentication → investigate
-	```
+Question: Did the identity successfully authenticate after the account was disabled?
+
+## Detection Progression
+```yanl
+Disabled Account Attempt (50057)
+↓
+Baseline Detection
+↓
+Account Disable Event Confirmed
+↓
+Later Successful Authentication
+↓
+Higher-Risk Condition
+↓
+Investigate
+```
 
 
 ## 7. MFA Fatigue
@@ -737,47 +765,53 @@ This still does not automatically establish compromise. The sequence should be i
 
 ## 8. RBAC Policy Violations
 
-RBAC violation detection determines whether a user performed a `esource-management action` that falls outside their expected authorization.
+RBAC violation detection identifies sensitive Azure resource actions performed by identities outside their expected authorization.
+To reduce noise, the detection focuses on specific security-sensitive operations rather than all Azure write and delete activity. This addresses Mohammed's concern that the original filter was too broad for production. 
 
-Unlike simply detecting an administrative action, this detection requires an `expected-access baseline`. 
-The baseline `defines which identities are authorized to perform privileged operations`.
-
-In this example, the approved administrators are defined first. `AzureActivity` is then examined for successful write or delete operations performed by identities outside that approved group.
-
-```kql
+```kQL
 let ApprovedAdmins = dynamic([
     "alice@contoso.com",
     "securityadmin@contoso.com"
 ]);
+
+let SensitiveOperations = dynamic([
+    "Microsoft.Authorization/roleAssignments/write",
+    "Microsoft.Authorization/roleAssignments/delete",
+    "Microsoft.Network/networkSecurityGroups/write",
+    "Microsoft.Network/networkSecurityGroups/delete",
+    "Microsoft.Compute/virtualMachines/delete"
+]);
+
 AzureActivity
 | where TimeGenerated > ago(24h)
 | where ActivityStatusValue =~ "Success"
-| where OperationNameValue has_any (
-    "write",
-    "delete"
-)
+| where OperationNameValue in~ (SensitiveOperations)
 | where Caller !in~ (ApprovedAdmins)
 | project
     TimeGenerated,
     Caller,
     OperationNameValue,
     ResourceGroup,
+    ResourceId,
     SubscriptionId,
     ActivityStatusValue
 | order by TimeGenerated desc
 ```
-
-`AzureActivit`y provides information about `Azure resource-management operations`, including the `identity responsible for an action`. 
-This allows observed activity to be compared against an established authorization baseline.
-
-The detection logic is:
-
-```kql
-Observed Action → Identify Caller → Compare Against Expected Authorization → Flag Unexpected Activity
+```YAML
+Detection Logic
+Sensitive Azure Operation
+↓
+Identify Caller
+↓
+Compare Against Authorization Baseline
+↓
+Unexpected Actor
+↓
+Investigate
 ```
 
-- An important distinction is that the query does not prove that every non-approved action is malicious. 
-- It identifies activity that does not match the expected authorization model and therefore requires investigation.
+The detection does not establish malicious activity. It identifies sensitive operations that do not match the expected authorization model and require investigation.
+
 
 
 # IAM Detection Coverage
