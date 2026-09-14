@@ -15,7 +15,7 @@ Identity and Access Management (IAM) controls how identities authenticate, what 
 This project approaches IAM from a security-engineering and detection perspective, using least privilege, MFA, RBAC, Conditional Access, privileged-access management, and identity lifecycle governance as the security foundation.
 
 ## Core Principle
-```PowerShell
+```yaml
 Identity does not equal authorization.
 ```
 	
