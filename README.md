@@ -477,14 +477,15 @@ Microsoft documents ResultType != 0 as a method for querying failed sign-ins.
 
 ## 4. Dormant Account Activity
 Dormant-account detection identifies identities that become active after an extended period of inactivity.
-```KQL
 
+```kql
 let HistoricalSignins =
     SigninLogs
     | where TimeGenerated between (ago(120d) .. ago(30d))
     | where ResultType == 0
     | summarize LastHistoricalLogin = max(TimeGenerated)
         by UserPrincipalName;
+
 let RecentSignins =
     SigninLogs
     | where TimeGenerated > ago(24h)
@@ -494,6 +495,7 @@ let RecentSignins =
         SourceIP = any(IPAddress),
         Application = any(AppDisplayName)
         by UserPrincipalName;
+
 RecentSignins
 | join kind=leftouter HistoricalSignins on UserPrincipalName
 | extend DaysSincePreviousLogin =
@@ -507,6 +509,9 @@ RecentSignins
     SourceIP,
     Application
 | order by DaysSincePreviousLogin desc
+```
+
+```yaml
 Detection Logic
 Previously Inactive Identity
 ↓
