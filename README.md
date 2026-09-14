@@ -465,23 +465,35 @@ The detection flags privileged actions performed by identities outside the appro
 
 
 ## 3. Repeated Failed Authentication
-This is the closest KQL equivalent to the Python failed-login counter.
-```kql
+Repeated failed-authentication detection identifies identities with multiple distinct failed authentication flows within a short time period.
 
+```kql
 SigninLogs
 | where TimeGenerated > ago(1h)
 | where ResultType != 0
 | summarize
-    FailedAttempts = count(),
+    FailedAttempts = dcount(CorrelationId),
     Applications = make_set(AppDisplayName),
     SourceIPs = make_set(IPAddress)
     by UserPrincipalName, bin(TimeGenerated, 10m)
 | where FailedAttempts >= 5
 | order by FailedAttempts desc
 ```
-Here we're asking:
-Which identity failed authentication five or more times within ten minutes?
-Microsoft documents ResultType != 0 as a method for querying failed sign-ins.
+
+```yaml
+Detection Logic
+Failed Authentication
+↓
+Count Distinct Authentication Flows (CorrelationId)
+↓
+Five or More Failures Within 10 Minutes
+↓
+Threshold Exceeded
+↓
+Investigate
+```
+
+Using CorrelationId reduces double counting when multiple SigninLogs records belong to the same authentication flow. 
 
 
 ## 4. Dormant Account Activity
