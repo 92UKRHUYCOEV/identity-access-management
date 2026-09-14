@@ -633,57 +633,75 @@ SigninLogs
 
 
 ## 7. MFA Fatigue
-MFA fatigue detection looks for repeated multi-factor authentication challenges that may indicate an attacker is attempting to pressure a user into approving an unauthorized sign-in.
-Microsoft `Entra sign-in logs` record MFA-related authentication failures in `SigninLogs`. 
-A simple detection can identify users who experience multiple failed MFA challenges within a short period.
+MFA fatigue detection looks for repeated multi-factor authentication challenges that may indicate an attacker is attempting to pressure a user into approving an unauthorized sign-in. A simple count of MFA-related failures can create false positives because not every MFA failure represents a user explicitly rejecting an authentication request. For higher-fidelity detection, the query should distinguish user-declined MFA challenges from other authentication conditions.
 
-// Introductory Baseline
+Microsoft Entra SigninLogs can record ResultType == 500121 when authentication fails during a strong authentication request. The Status information can then be used to identify cases in which the user specifically declined the MFA request.
+
+An additional consideration is CorrelationId. A single authentication flow may generate multiple SigninLogs records sharing the same CorrelationId.  Counting raw records can therefore inflate the apparent number of MFA attempts.  Grouping or deduplicating by CorrelationId better represents distinct authentication flows. 
+
+### MFA Rejection Baseline
+
 ```kql
-SigninLogs 
+SigninLogs
 | where TimeGenerated > ago(1h)
-| where ResultType == 50074
+| where ResultType == 500121
+| where tostring(Status) has "MFA denied; user declined the authentication"
 | summarize
-    MFAFailures = count(),
+    MFARejections = dcount(CorrelationId),
     SourceIPs = make_set(IPAddress),
     Applications = make_set(AppDisplayName)
     by UserPrincipalName, bin(TimeGenerated, 10m)
-| where MFAFailures >= 3
-| order by MFAFailures desc
+| where MFARejections >= 3
+| order by MFARejections desc
 ```
 
-This query identifies users who experienced three or more failed MFA challenges within a ten-minute period.
-The detection logic is:
+The important change is:
 ```yaml
-	Repeated MFA Failures → Identify User → Count Attempts → Flag Repeated Challenge Activity
+	Raw failure records → Distinct authentication flows
 ```
-However, repeated MFA failures alone do not prove an MFA fatigue attack. 
-They may also result from user error, expired sessions, device issues, or legitimate authentication problems.
+rather than assuming:
+```yaml
+	One SigninLogs row = one MFA attempt
+```
 
-A stronger detection looks for a more meaningful behavioral sequence:
+This baseline identifies an identity experiencing multiple distinct user-declined MFA authentication flows during a short period.
+
+However, repeated MFA rejection still does not prove MFA fatigue. 
+
+A user could legitimately reject authentication attempts that they did not initiate. 
+
+The more meaningful security condition remains the behavioral sequence already established in the original project:
 ```yaml
-	Repeated MFA Failures → Followed by Successful Authentication
+	Repeated MFA Rejections → Same Identity → Later Successful Authentication → Investigation
 ```
-// Primary Example
-```kql
+
+Primary Behavioral Detection
+```KQL
 let MFAFailures =
     SigninLogs
     | where TimeGenerated > ago(1h)
-    | where ResultType == 50074
+    | where ResultType == 500121
+    | where tostring(Status) has "MFA denied; user declined the authentication"
     | summarize
-        FailureCount = count(),
+        FailureCount = dcount(CorrelationId),
         FirstFailure = min(TimeGenerated),
         LastFailure = max(TimeGenerated)
         by UserPrincipalName
     | where FailureCount >= 3;
+
 let SuccessfulSignins =
     SigninLogs
     | where TimeGenerated > ago(1h)
     | where ResultType == 0
+    | summarize arg_max(TimeGenerated, *)
+        by UserPrincipalName, CorrelationId
     | project
         UserPrincipalName,
         SuccessfulLogin = TimeGenerated,
+        CorrelationId,
         IPAddress,
         AppDisplayName;
+
 MFAFailures
 | join kind=inner SuccessfulSignins on UserPrincipalName
 | where SuccessfulLogin > LastFailure
@@ -694,46 +712,27 @@ MFAFailures
     LastFailure,
     SuccessfulLogin,
     IPAddress,
-    AppDisplayName
+    AppDisplayName,
+    CorrelationId
 | order by SuccessfulLogin desc
 ```
 
-This second query correlates repeated failed MFA challenges with a later successful sign-in for the same identity.
-
-The detection logic becomes:
-	Repeated MFA Failures → Same Identity → Later Successful Sign-In → Investigate
-
-This approach is stronger because it evaluates a `behavioral sequence` rather than a single error condition.
-
-A successful sign-in following repeated MFA failures still does not automatically prove malicious activity. 
-It indicates a higher-risk authentication pattern that should be investigated in context with source IP addresses, 
-device information, application access, geographic location, Conditional Access results, and user-reported MFA activity.
-
-## Detection Progression
-
-```python
-Basic Detection
-Repeated MFA Failures
-        ↓
-Threshold Exceeded
-        ↓
-Potential MFA Abuse
-
-Improved Detection
-Repeated MFA Failures
-        ↓
-Successful Authentication
-        ↓
-Higher-Risk Behavioral Pattern
-        ↓
-Investigation
+```yaml
+Detection Logic
+MFA challenge rejected
+↓
+Count distinct authentication flows (CorrelationId)
+↓
+Multiple rejections for same identity
+↓
+Successful authentication follows
+↓
+Higher-risk behavioral sequence
+↓
+Investigate
 ```
 
-The important distinction is that the first query detects `authentication failure volume`, while the second detects a potentially suspicious `sequence of authentication behavior`.
-
-For the report, I kept the second query as the primary example and treated the first as the introductory baseline. 
-It better supports the principle that useful detection should focus on behavior and context, not only on isolated log values.
-
+This still does not automatically establish compromise. The sequence should be investigated using source IP, device information, application access, geographic location, Conditional Access results, authentication details, and user confirmation.
 
 
 ## 8. RBAC Policy Violations
