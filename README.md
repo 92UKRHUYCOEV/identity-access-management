@@ -125,8 +125,8 @@ That gives us a natural bridge from IAM administration → IAM security engineer
 # PYTHON DETECTION SCRIPTS
 
 ## 1. Detect Excessive Privileges
-``` Python
 
+``` Python
 user_roles = {
     "alice": ["read_reports"],
     "bob": ["read_reports", "edit_reports"],
@@ -136,41 +136,78 @@ user_roles = {
 allowed_role_count = 2
 
 for user, roles in user_roles.items():
-    if len(roles) > allowed_role_count:
+    if len(roles) >= 3:
         print(f"[ALERT] {user} may have excessive privileges: {roles}")
 ```
-This demonstrates least-privilege monitoring. Charlie has more permissions than the defined threshold and is flagged for review.
+
+```yaml
+Detection Logic
+Identify User
+↓
+Count Assigned Roles
+↓
+Threshold Exceeded
+↓
+Review for Excessive Privilege
+```
+The threshold is an example. In production, privileges should be compared against the user’s expected role.
 
 
 ## 2. Detect Unauthorized Administrative Access
-``` Python
 
+``` Python
 authorized_admins = ["alice", "security_admin"]
 
-login_events = [
-    {"user": "alice", "role": "admin"},
-    {"user": "bob", "role": "user"},
-    {"user": "charlie", "role": "admin"}
+admin_events = [
+    {"user": "alice", "action": "add_member_to_role"},
+    {"user": "bob", "action": "read_reports"},
+    {"user": "charlie", "action": "reset_user_password"}
 ]
 
-for event in login_events:
-    if event["role"] == "admin" and event["user"] not in authorized_admins:
+privileged_actions = [
+    "add_member_to_role",
+    "remove_member_from_role",
+    "reset_user_password",
+    "delete_user",
+    "add_service_principal"
+]
+
+for event in admin_events:
+    if (
+        event["action"] in privileged_actions
+        and event["user"] not in authorized_admins
+    ):
         print(
-            f"[ALERT] Unauthorized administrative access detected: "
-            f"{event['user']}"
+            f"[ALERT] Unauthorized administrative action: "
+            f"{event['user']} performed {event['action']}"
         )
 ```
-This checks whether someone using an administrative role is actually on the approved administrator list.
+
+```yaml
+Detection Logic
+Sensitive Administrative Action
+↓
+Identify Actor
+↓
+Compare Against Approved Administrators
+↓
+Unauthorized Actor Detected
+↓
+Investigate
+```
+This now matches the KQL concept better: we're detecting a sensitive administrative action by an unauthorized actor, rather than merely checking whether someone has an admin role.
 
 
 ## 3. Detect Repeated Failed Logins
-``` Python
 
+``` Python
+To match the revised KQL, the Python example should also count distinct authentication flows, rather than simply counting every event.
 login_events = [
-    {"user": "alice", "status": "failed"},
-    {"user": "alice", "status": "failed"},
-    {"user": "alice", "status": "failed"},
-    {"user": "bob", "status": "success"}
+    {"user": "alice", "status": "failed", "correlation_id": "A101"},
+    {"user": "alice", "status": "failed", "correlation_id": "A101"},
+    {"user": "alice", "status": "failed", "correlation_id": "A102"},
+    {"user": "alice", "status": "failed", "correlation_id": "A103"},
+    {"user": "bob", "status": "success", "correlation_id": "B101"}
 ]
 
 failed_logins = {}
@@ -178,177 +215,331 @@ failed_logins = {}
 for event in login_events:
     if event["status"] == "failed":
         user = event["user"]
-        failed_logins[user] = failed_logins.get(user, 0) + 1
+        failed_logins.setdefault(user, set())
+        failed_logins[user].add(event["correlation_id"])
 
-for user, count in failed_logins.items():
-    if count >= 3:
+for user, correlation_ids in failed_logins.items():
+    failure_count = len(correlation_ids)
+
+    if failure_count >= 3:
         print(
-            f"[ALERT] Multiple failed authentication attempts: "
-            f"{user} ({count} failures)"
+            f"[ALERT] Multiple failed authentication flows: "
+            f"{user} ({failure_count} failures)"
         )
 ```
-This models detection of password spraying, brute-force activity, or repeated authentication failures.
+
+```yaml
+Detection Logic
+Failed Authentication
+↓
+Identify Distinct Authentication Flow
+↓
+Count Failures by User
+↓
+Threshold Exceeded
+↓
+Investigate
+```
+This mirrors the KQL use of dcount(CorrelationId) and prevents duplicate records from inflating the failure count.
 
 
 ## 4. Detect Dormant Account Usage
+To match the KQL, the Python example should detect a previously inactive identity becoming active, not simply identify an account that has been dormant.
+
 ``` Python
-
 from datetime import datetime, timedelta
-
-accounts = [
-    {
-        "user": "alice",
-        "last_login": datetime.now() - timedelta(days=5)
-    },
-    {
-        "user": "bob",
-        "last_login": datetime.now() - timedelta(days=120)
-    }
-]
-
+historical_logins = {
+    "alice": datetime.now() - timedelta(days=5),
+    "bob": datetime.now() - timedelta(days=120)
+}
+recent_logins = {
+    "bob": datetime.now()
+}
 dormant_threshold = 90
-
-for account in accounts:
-    days_inactive = (datetime.now() - account["last_login"]).days
-
-    if days_inactive > dormant_threshold:
-        print(
-            f"[ALERT] Dormant account detected: "
-            f"{account['user']} inactive for {days_inactive} days"
-        )
+for user, current_login in recent_logins.items():
+    previous_login = historical_logins.get(user)
+if previous_login:
+        days_inactive = (current_login - previous_login).days
+if days_inactive >= dormant_threshold:
+            print(
+                f"[ALERT] Dormant account reactivated: "
+                f"{user} after {days_inactive} days"
+            )
 ```
-This supports Identity Governance and Administration (IGA) by identifying accounts that may need disabling or review.
+
+```yaml
+Detection Logic
+Previously Inactive Identity
+↓
+Successful Login Detected
+↓
+90+ Days Since Previous Login
+↓
+Dormant Account Reactivated
+↓
+Investigate
+```
+This now mirrors the KQL logic much better: it detects activity from a dormant account, not just dormancy itself.
 
 
 ## 5. Detect Privilege Escalation
-``` Python
-
+```Python
+from datetime import datetime
+approved_admins = ["security_admin", "iam_admin"]
+privileged_roles = [
+    "global_admin",
+    "privileged_role_admin",
+    "security_admin",
+    "user_admin"
+]
 role_changes = [
     {
+        "actor": "security_admin",
         "user": "alice",
-        "old_role": "reader",
-        "new_role": "reader"
+        "new_role": "global_admin",
+        "via_pim": True,
+        "hour": 10
     },
     {
+        "actor": "unknown_admin",
         "user": "bob",
-        "old_role": "reader",
-        "new_role": "admin"
+        "new_role": "global_admin",
+        "via_pim": False,
+        "hour": 22
     }
 ]
-
-privileged_roles = ["admin", "global_admin", "security_admin"]
-
 for change in role_changes:
-    if (
-        change["new_role"] in privileged_roles
-        and change["old_role"] not in privileged_roles
-    ):
-        print(
-            f"[ALERT] Privilege escalation detected: "
-            f"{change['user']} changed from "
-            f"{change['old_role']} to {change['new_role']}"
-        )
+    if change["new_role"] in privileged_roles:
+unexpected_actor = change["actor"] not in approved_admins
+        outside_change_window = change["hour"] < 8 or change["hour"] > 18
+        outside_pim = not change["via_pim"]
+if outside_pim and (
+            unexpected_actor or outside_change_window
+        ):
+            print(
+                f"[ALERT] Unexpected privileged role assignment: "
+                f"{change['user']} received {change['new_role']} "
+                f"from {change['actor']}"
+            )
 ```
-This one is particularly useful for a cybersecurity portfolio because it detects a security-relevant change, rather than just validating configuration.
+
+```yaml
+Detection Logic
+Privileged Role Assignment
+↓
+Exclude Expected PIM Activity
+↓
+Evaluate Actor and Timing
+↓
+Unexpected Privileged Assignment
+↓
+Investigate
+````
+This now aligns with the updated KQL logic instead of treating every privileged-role assignment as malicious.
 
 
 ## 6. Detect Disabled Account Authentication
 ``` Python
-
-accounts = {
-    "alice": "enabled",
-    "bob": "disabled",
-    "charlie": "enabled"
-}
-
-login_events = [
-    {"user": "alice", "status": "success"},
-    {"user": "bob", "status": "success"},
-    {"user": "charlie", "status": "failed"}
+from datetime import datetime, timedelta
+account_events = [
+    {
+        "user": "bob",
+        "event": "disabled",
+        "time": datetime.now() - timedelta(hours=2)
+    }
 ]
-
+login_events = [
+    {
+        "user": "bob",
+        "status": "success",
+        "time": datetime.now() - timedelta(hours=1)
+    }
+]
+disabled_accounts = {}
+for event in account_events:
+    if event["event"] == "disabled":
+        disabled_accounts[event["user"]] = event["time"]
 for event in login_events:
     user = event["user"]
-
-    if (
-        accounts.get(user) == "disabled"
-        and event["status"] == "success"
+if (
+        event["status"] == "success"
+        and user in disabled_accounts
+        and event["time"] > disabled_accounts[user]
     ):
         print(
-            f"[CRITICAL] Disabled account successfully authenticated: {user}"
+            f"[CRITICAL] Successful authentication after account disablement: "
+            f"{user}"
         )
 ```
-A disabled account successfully authenticating would warrant immediate investigation.
+```yaml
+Detection Logic
+Account Disabled
+↓
+Later Successful Login Detected
+↓
+Compare Event Times
+↓
+Authentication Occurred After Disablement
+↓
+Investigate Immediately
+```
+This now mirrors the stronger KQL correlation instead of only checking whether an account is currently marked disabled.
 
 
 ## 7. Detect MFA Fatigue Behavior
-``` Python
+To match the revised KQL, the Python example should count distinct MFA rejection flows and then look for a later successful authentication.
 
+```kql
 mfa_events = [
-    {"user": "alice", "result": "denied"},
-    {"user": "alice", "result": "denied"},
-    {"user": "alice", "result": "denied"},
-    {"user": "alice", "result": "approved"},
-    {"user": "bob", "result": "approved"}
+    {"user": "alice", "result": "denied", "correlation_id": "A101"},
+    {"user": "alice", "result": "denied", "correlation_id": "A101"},
+    {"user": "alice", "result": "denied", "correlation_id": "A102"},
+    {"user": "alice", "result": "denied", "correlation_id": "A103"},
+    {"user": "alice", "result": "approved", "correlation_id": "A104"}
 ]
-
 mfa_denials = {}
-
 for event in mfa_events:
     user = event["user"]
-
-    if event["result"] == "denied":
-        mfa_denials[user] = mfa_denials.get(user, 0) + 1
-
-    if (
+if event["result"] == "denied":
+        mfa_denials.setdefault(user, set())
+        mfa_denials[user].add(event["correlation_id"])
+if (
         event["result"] == "approved"
-        and mfa_denials.get(user, 0) >= 3
+        and len(mfa_denials.get(user, set())) >= 3
     ):
         print(
-            f"[ALERT] Possible MFA fatigue attack: "
-            f"{user} approved MFA after "
-            f"{mfa_denials[user]} denials"
+            f"[ALERT] Possible MFA fatigue pattern: "
+            f"{user} authenticated after "
+            f"{len(mfa_denials[user])} distinct MFA rejections"
         )
 ```
-This is an especially strong IAM detection example because it connects authentication telemetry to attacker behavior.
+```yaml
+Detection Logic
+MFA Challenge Rejected
+↓
+Count Distinct Authentication Flows
+↓
+Multiple Rejections for Same Identity
+↓
+Successful Authentication Follows
+↓
+Investigate
+```
+This now mirrors the KQL logic by avoiding duplicate counting and focusing on the rejection → success behavioral sequence.
 
 
 ## 8. Detect Access Outside Normal Role Permissions
-This expands the original RBAC example into an actual detection control.
-``` Python
+To match the revised KQL, the Python example should focus on sensitive operations and compare the actor against an approved authorization baseline.
 
-role_permissions = {
-    "analyst": ["read_reports"],
-    "manager": ["read_reports", "edit_reports"],
-    "admin": ["read_reports", "edit_reports", "delete_reports"]
-}
+```kql
+approved_admins = [
+    "alice",
+    "security_admin"
+]
 
-users = {
-    "alice": "analyst",
-    "bob": "manager",
-    "charlie": "admin"
-}
+sensitive_actions = [
+    "role_assignment_write",
+    "role_assignment_delete",
+    "network_security_group_write",
+    "network_security_group_delete",
+    "virtual_machine_delete"
+]
 
 activity_log = [
-    {"user": "alice", "action": "read_reports"},
-    {"user": "alice", "action": "delete_reports"},
-    {"user": "bob", "action": "edit_reports"}
+    {"user": "alice", "action": "role_assignment_write"},
+    {"user": "bob", "action": "read_reports"},
+    {"user": "charlie", "action": "virtual_machine_delete"}
 ]
 
 for event in activity_log:
     user = event["user"]
     action = event["action"]
 
-    role = users.get(user)
-    allowed_actions = role_permissions.get(role, [])
-
-    if action not in allowed_actions:
+    if (
+        action in sensitive_actions
+        and user not in approved_admins
+    ):
         print(
-            f"[ALERT] Unauthorized action detected: "
-            f"{user} attempted '{action}' "
-            f"with role '{role}'"
+            f"[ALERT] Unauthorized sensitive action: "
+            f"{user} performed {action}"
         )
 ```
+
+```yaml
+Detection Logic
+Sensitive Operation
+↓
+Identify Actor
+↓
+Compare Against Authorization Baseline
+↓
+Unexpected Actor Detected
+↓
+Investigate
+```
+This now aligns with the revised RBAC KQL by focusing on specific sensitive actions, rather than treating all activity outside a role as equally important.
+
+
+## 9. Detect OAuth / Illicit Consent Grant Abuse
+
+```kql
+high_risk_permissions = [
+    "Mail.ReadWrite",
+    "Files.ReadWrite.All",
+    "Directory.ReadWrite.All"
+]
+
+consent_events = [
+    {
+        "user": "alice",
+        "application": "ReportViewer",
+        "permissions": ["Mail.Read"]
+    },
+    {
+        "user": "bob",
+        "application": "UnknownApp",
+        "permissions": ["Mail.ReadWrite", "Files.ReadWrite.All"]
+    }
+]
+
+for event in consent_events:
+    risky_permissions = [
+        permission
+        for permission in event["permissions"]
+        if permission in high_risk_permissions
+    ]
+
+    if risky_permissions:
+        print(
+            f"[ALERT] High-risk application consent: "
+            f"{event['user']} granted {risky_permissions} "
+            f"to {event['application']}"
+        )
+```
+```yaml
+Detection Logic
+Application Consent Granted
+↓
+Identify User and Application
+↓
+Inspect Granted Permissions
+↓
+High-Risk Permission Detected
+↓
+Investigate
+```
+
+This matches the KQL concept for OAuth / Illicit Consent Grant Abuse — T1528.
+
+
+
+
+
+
+
+
+
+
 
 This produces the kind of detection logic in the IAM project:
 ```python	
