@@ -913,16 +913,19 @@ This extends IAM detection beyond human users to application and service identit
 # IAM Detection Coverage
 The eight detection examples demonstrate how different IAM security conditions can be identified using Microsoft Sentinel telemetry.
 
-|IAM Detection	|Primary KQL Source	|Detection Objective|
-|---------------|-------------------|---------------------|
-|Excessive privileges	|AuditLogs	|Identify potentially excessive role assignments|
-|Unauthorized administrative access	|AuditLogs	|Identify sensitive actions performed by unexpected actors|
-|Repeated failed authentication	|SigninLogs	|Detect repeated authentication failures|
-|Dormant account activity	|SigninLogs	|Detect renewed activity from previously inactive identities|
-|Privilege escalation	|AuditLogs	|Identify unexpected privileged-role assignments|
-|Disabled-account authentication	|AuditLogs + SigninLogs	|Detect authentication occurring after an account was disabled|
-|MFA fatigue	|SigninLogs	|Detect repeated MFA failures followed by successful authentication|
-|RBAC policy violation	|AzureActivity + authorization baseline	|Identify resource actions inconsistent with expected authorization|
+| # |IAM Detection	|Primary KQL Source	|Detection Objective|
+|---|---------------|-------------------|---------------------|
+| 1 |Excessive privileges	|AuditLogs	|Identify potentially excessive role assignments|
+| 2 |Unauthorized administrative access	|AuditLogs	|Identify sensitive actions performed by unexpected actors|
+| 3 |Repeated failed authentication	|SigninLogs	|Detect repeated authentication failures|
+| 4 |Dormant account activity	|SigninLogs	|Detect renewed activity from previously inactive identities|
+| 5 |Privilege escalation	|AuditLogs	|Identify unexpected privileged-role assignments|
+| 6 |Disabled-account authentication	|AuditLogs + SigninLogs	|Detect authentication occurring after an account was disabled|
+| 7 |MFA fatigue	|SigninLogs	|Detect repeated MFA failures followed by successful authentication|
+| 8 |RBAC policy violation	|AzureActivity + authorization baseline	|Identify resource actions inconsistent with expected authorization|
+| 9 |OAuth / Illicit Consent Grant Abuse |AuditLogs |Identify high-risk application consent grants   |
+| 10 |Service Principal Credential Abuse  |AuditLogs |Identify unexpected credential additions to service principals |
+    |
 
 
 # Demonstrating Detection Flexibility
