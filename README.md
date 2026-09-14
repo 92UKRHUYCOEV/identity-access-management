@@ -419,14 +419,13 @@ The threshold of 3 is an example, not a universal definition of excessive privil
 
 
 ## 2. Unauthorized Administrative Access
-Here we define an approved administrator baseline and detect privileged operations performed by anyone outside it.
-```kql
+Unauthorized administrative access detection identifies sensitive administrative actions performed by identities outside the approved administrator baseline.
 
+```kql
 let ApprovedAdmins = dynamic([
     "alice@contoso.com",
     "securityadmin@contoso.com"
 ]);
-
 AuditLogs
 | where TimeGenerated > ago(24h)
 | extend Actor =
@@ -448,11 +447,21 @@ AuditLogs
     Result
 | order by TimeGenerated desc
 ```
-This demonstrates an important IAM concept:
-```YAML
-Privileged action + actor not authorized = detection
+
+```yaml
+Detection Logic
+Sensitive Administrative Action
+↓
+Identify Actor
+↓
+Compare Against Approved Administrators
+↓
+Unauthorized Actor Detected
+↓
+Investigate
 ```
-Microsoft also uses `AuditLogs` to investigate sensitive administrative actions and possible privilege escalation.
+
+The detection flags privileged actions performed by identities outside the approved administrative baseline.
 
 
 ## 3. Repeated Failed Authentication
