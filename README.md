@@ -925,7 +925,6 @@ The eight detection examples demonstrate how different IAM security conditions c
 | 8 |RBAC policy violation	|AzureActivity + authorization baseline	|Identify resource actions inconsistent with expected authorization|
 | 9 |OAuth / Illicit Consent Grant Abuse |AuditLogs |Identify high-risk application consent grants   |
 | 10 |Service Principal Credential Abuse  |AuditLogs |Identify unexpected credential additions to service principals |
-    |
 
 
 # Demonstrating Detection Flexibility
