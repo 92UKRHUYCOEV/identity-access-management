@@ -812,7 +812,103 @@ Investigate
 
 The detection does not establish malicious activity. It identifies sensitive operations that do not match the expected authorization model and require investigation.
 
+## 9. OAuth / Illicit Consent Grant Abuse — T1528
 
+OAuth consent abuse occurs when a user authorizes a malicious application to access organizational resources. This can bypass the need to defeat MFA because access is granted through application permissions.
+This detection monitors AuditLogs for application consent involving high-risk permissions such as Mail.ReadWrite, Files.ReadWrite.All, and Directory.ReadWrite.All. 
+Example Detection
+
+```kql
+AuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName has_any (
+    "Consent to application",
+    "Add delegated permission grant"
+)
+| extend Actor =
+    tostring(InitiatedBy.user.userPrincipalName)
+| extend TargetApplication =
+    tostring(TargetResources[0].displayName)
+| extend ModifiedProperties =
+    tostring(TargetResources[0].modifiedProperties)
+| where ModifiedProperties has_any (
+    "Mail.ReadWrite",
+    "Files.ReadWrite.All",
+    "Directory.ReadWrite.All"
+)
+| project
+    TimeGenerated,
+    Actor,
+    TargetApplication,
+    OperationName,
+    ModifiedProperties,
+    Result
+| order by TimeGenerated desc
+```
+
+```yaml
+Detection Logic
+Application Consent Granted
+↓
+Identify User and Application
+↓
+Inspect Granted Permissions
+↓
+High-Risk Permission Detected
+↓
+Investigate
+```
+
+The detection identifies application consent involving sensitive permissions that should be validated against expected business requirements.
+
+
+## 10. Service Principal Credential Abuse — T1098.001
+Service principals are non-human identities used by applications, automation, and cloud services. An attacker with sufficient privileges may add a secret or certificate to an existing service principal, creating a potential persistence mechanism.
+
+This detection monitors AuditLogs for credential and secret changes involving service principals. 
+Example Detection
+
+```kql
+AuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName has_any (
+    "Add service principal credentials",
+    "Update application",
+    "Certificates and secrets management"
+)
+| extend Actor =
+    tostring(InitiatedBy.user.userPrincipalName)
+| extend TargetServicePrincipal =
+    tostring(TargetResources[0].displayName)
+| extend TargetId =
+    tostring(TargetResources[0].id)
+| project
+    TimeGenerated,
+    Actor,
+    TargetServicePrincipal,
+    TargetId,
+    OperationName,
+    TargetResources,
+    Result
+| order by TimeGenerated desc
+```
+
+```yaml
+Detection Logic
+Service Principal Modified
+↓
+Credential or Secret Added
+↓
+Identify Actor
+↓
+Compare Against Expected Workflow
+↓
+Unexpected Credential Change
+↓
+Investigate for Persistence
+```
+
+This extends IAM detection beyond human users to application and service identities.
 
 # IAM Detection Coverage
 The eight detection examples demonstrate how different IAM security conditions can be identified using Microsoft Sentinel telemetry.
