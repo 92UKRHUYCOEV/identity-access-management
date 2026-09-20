@@ -21,7 +21,8 @@ Identity does not equal authorization.
 	
 Successful authentication establishes identity, but does not establish that every subsequent action is authorized. Activity must be evaluated against expected roles, privileges, resources, and access policies.
 
-Detection Methodology
+## Detection Methodology
+```yaml
 IAM Principle
 ↓
 Expected Behavior
@@ -33,9 +34,10 @@ Detection Logic
 Evidence
 ↓
 Investigation
-	```yaml
-	Behavior provides stronger detection context than isolated events.
-	```
+```
+
+Behavior provides stronger detection context than isolated events.
+
 Python demonstrates the detection logic programmatically, while Microsoft Sentinel and KQL apply that logic to enterprise identity telemetry.
 
 The central investigative question is:
@@ -45,7 +47,7 @@ The central investigative question is:
 
 
 ## IAM Implementation Lifecycle
-```Python
+```yaml
 	PLAN → ASSESS → DESIGN → DEPLOY → GOVERN → MONITOR → IMPROVE → AUTOMATE
 ```
 
@@ -127,6 +129,7 @@ Unauthorized Actor Detected
 ↓
 Investigate
 ```
+
 We're detecting a sensitive administrative action by an unauthorized actor, rather than merely checking whether someone has an admin role.
 
 
@@ -172,6 +175,7 @@ Threshold Exceeded
 ↓
 Investigate
 ```
+
 This demonstrates least-privilege monitoring, KQL use of dcount(CorrelationId) and prevents duplicate records from inflating the failure count.
 
 
@@ -211,6 +215,7 @@ Dormant Account Reactivated
 ↓
 Investigate
 ```
+
 This supports Identity Governance and Administration (IGA) by identifying accounts that may need disabling or review, by detecting activity from a dormant account, not just dormancy itself.
 
 
@@ -267,6 +272,7 @@ Unexpected Privileged Assignment
 ↓
 Investigate
 ````
+
 This one detects a security-relevant change, rather than just validating configuration, using KQL logic instead of treating every privileged-role assignment as malicious.
 
 
@@ -303,6 +309,7 @@ if (
             f"{user}"
         )
 ```
+
 ## Detection Logic
 ```yaml
 Account Disabled
@@ -315,13 +322,14 @@ Authentication Occurred After Disablement
 ↓
 Investigate Immediately
 ```
+
 A disabled account successfully authenticating would warrant immediate investigation, instead of only checking whether an account is currently marked disabled.
 
 
 ## 7. Detect MFA Fatigue Behavior
 To match the revised KQL, the Python example should count distinct MFA rejection flows and then look for a later successful authentication.
 
-```kql
+```Python
 mfa_events = [
     {"user": "alice", "result": "denied", "correlation_id": "A101"},
     {"user": "alice", "result": "denied", "correlation_id": "A101"},
@@ -345,6 +353,7 @@ if (
             f"{len(mfa_denials[user])} distinct MFA rejections"
         )
 ```
+
 ## Detection Logic
 ```yaml
 MFA Challenge Rejected
@@ -357,13 +366,14 @@ Successful Authentication Follows
 ↓
 Investigate
 ```
+
 This is an especially strong IAM detection example it connects authentication telemetry to attacker behavior, using KQL logic by avoiding duplicate counting and focusing on the rejection → success behavioral sequence.
 
 
 ## 8. Detect Access Outside Normal Role Permissions
 This expands the original RBAC example into an actual detection control, the Python code should focus on sensitive operations and compare the attacker behavior against an approved authorization baseline.
 
-```kql
+```Python
 approved_admins = [
     "alice",
     "security_admin"
@@ -409,6 +419,7 @@ Unexpected Actor Detected
 ↓
 Investigate
 ```
+
 This produces the kind of detection logic in the IAM project:
 
 ```yaml
@@ -464,7 +475,7 @@ Investigate
 
 ## 10. Detect Service Principal Credential Abuse — T1098.001
 
-```kql
+```Python
 approved_admins = [
     "security_admin",
     "iam_admin"
@@ -519,7 +530,7 @@ Observed Action
 Detection
 ```
 
-```kql
+```Python
 Python IAM Detection Script Library:
 	1. detect_excessive_privileges.py
 	2. detect_unauthorized_admin.py
