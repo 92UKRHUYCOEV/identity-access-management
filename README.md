@@ -462,8 +462,7 @@ High-Risk Permission Detected
 Investigate
 ```
 
-## 10. Detect Service Principal Credential Abuse
-This matches the KQL concept for Service Principal Credential Abuse — T1098.001.
+## 10. Detect Service Principal Credential Abuse — T1098.001
 
 ```kql
 approved_admins = [
