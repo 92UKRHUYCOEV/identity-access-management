@@ -508,8 +508,16 @@ Investigate for Persistence
 ```
 
 This produces the kind of detection logic in the IAM project:
-```python	
-	Identity → Role → Expected Permission → Observed Action → Detection
+```yaml	
+Identity 
+↓
+Role
+↓
+Expected Permission 
+↓
+Observed Action
+↓
+Detection
 ```
 
 ```kql
@@ -527,8 +535,12 @@ Python IAM Detection Script Library:
 ```
 Each IAM security concept can be implemented first in Python and then translated into an equivalent Microsoft Sentinel KQL detection.
 
-```python	
-	Python logic → Enterprise telemetry → KQL detection rule
+```yaml	
+Python logic
+↓
+Enterprise telemetry 
+↓
+KQL detection rule
 ```
 
 Underlying security logic remains consistent even when the implementation technology changes.
@@ -537,7 +549,7 @@ Underlying security logic remains consistent even when the implementation techno
 - **Microsoft Sentinel / KQL:** Query `SigninLogs`, group failed authentication attempts by user and time window, and identify accounts exceeding the detection threshold.
 
 The objective is to demonstrate:
-```python	
+```yaml	
 	IAM Principle → Detection Logic → Python Implementation → KQL Implementation → Security Investigation
 ```
 
@@ -554,8 +566,8 @@ Microsoft currently documents:
 
 ## 1. Excessive Privileges
 This looks for users receiving an unusually high number of role assignments.
-```kql
 
+```kql
 AuditLogs
 | where TimeGenerated > ago(30d)
 | where OperationName has_any (
@@ -1033,7 +1045,6 @@ AuditLogs
     Result
 | order by TimeGenerated desc
 ```
-
 
 ## Detection Logic
 ```yaml
