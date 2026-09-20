@@ -432,32 +432,43 @@ OAuth consent abuse occurs when a user authorizes a malicious application to acc
 This detection monitors `AuditLogs` for application consent involving high-risk permissions such as `Mail.ReadWrite`, `Files.ReadWrite.All`, and `Directory.ReadWrite.All`. 
 The detection identifies application consent involving sensitive permissions that should be validated against expected business requirements.
 
-```kql
-AuditLogs
-| where TimeGenerated > ago(24h)
-| where OperationName has_any (
-    "Consent to application",
-    "Add delegated permission grant"
-)
-| extend Actor =
-    tostring(InitiatedBy.user.userPrincipalName)
-| extend TargetApplication =
-    tostring(TargetResources[0].displayName)
-| extend ModifiedProperties =
-    tostring(TargetResources[0].modifiedProperties)
-| where ModifiedProperties has_any (
+---Python
+high_risk_permissions = [
     "Mail.ReadWrite",
     "Files.ReadWrite.All",
     "Directory.ReadWrite.All"
-)
-| project
-    TimeGenerated,
-    Actor,
-    TargetApplication,
-    OperationName,
-    ModifiedProperties,
-    Result
-| order by TimeGenerated desc
+]
+
+consent_events = [
+    {
+        "user": "alice",
+        "application": "Microsoft Graph Explorer",
+        "permissions": ["User.Read"]
+    },
+    {
+        "user": "bob",
+        "application": "UnknownFinanceApp",
+        "permissions": [
+            "User.Read",
+            "Mail.ReadWrite",
+            "Files.ReadWrite.All"
+        ]
+    }
+]
+
+for event in consent_events:
+    risky_permissions = [
+        permission
+        for permission in event["permissions"]
+        if permission in high_risk_permissions
+    ]
+
+    if risky_permissions:
+        print(
+            f"[ALERT] High-risk OAuth consent detected: "
+            f"{event['user']} granted {event['application']} "
+            f"permissions {risky_permissions}"
+        )
 ```
 
 ## Detection Logic
