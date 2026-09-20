@@ -72,8 +72,8 @@ for user, roles in user_roles.items():
         print(f"[ALERT] {user} may have excessive privileges: {roles}")
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Identify User
 ↓
 Count Assigned Roles
@@ -115,8 +115,8 @@ for event in admin_events:
         )
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Sensitive Administrative Action
 ↓
 Identify Actor
@@ -160,8 +160,8 @@ for user, correlation_ids in failed_logins.items():
         )
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Failed Authentication
 ↓
 Identify Distinct Authentication Flow
@@ -199,8 +199,8 @@ if days_inactive >= dormant_threshold:
             )
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Previously Inactive Identity
 ↓
 Successful Login Detected
@@ -255,8 +255,8 @@ if outside_pim and (
             )
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Privileged Role Assignment
 ↓
 Exclude Expected PIM Activity
@@ -303,8 +303,8 @@ if (
             f"{user}"
         )
 ```
+## Detection Logic
 ```yaml
-Detection Logic
 Account Disabled
 ↓
 Later Successful Login Detected
@@ -345,8 +345,8 @@ if (
             f"{len(mfa_denials[user])} distinct MFA rejections"
         )
 ```
+## Detection Logic
 ```yaml
-Detection Logic
 MFA Challenge Rejected
 ↓
 Count Distinct Authentication Flows
@@ -397,8 +397,8 @@ for event in activity_log:
         )
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Sensitive Operation
 ↓
 Identify Actor
@@ -447,11 +447,10 @@ AuditLogs
     ModifiedProperties,
     Result
 | order by TimeGenerated desc
-
-
 ```
+
+## Detection Logic
 ```yaml
-Detection Logic
 Application Consent Granted
 ↓
 Identify User and Application
@@ -494,8 +493,9 @@ for event in credential_events:
         )
 ```
 
+
+## Detection Logic
 ```yaml
-Detection Logic
 Service Principal Credential Added
 ↓
 Identify Actor
@@ -573,7 +573,11 @@ AuditLogs
 | where RoleAssignmentCount >= 3 //Per users role
 | order by RoleAssignmentCount desc
 ```
-Detection logic:  User → Role assignments → Count privileges → Flag excessive access
+## Detection Logic
+```yaml
+User → Role assignments → Count privileges → Flag excessive access
+```
+
 The threshold of 3 is an example, not a universal definition of excessive privilege. In production, compare assignments against the user's expected role.
 
 
@@ -607,8 +611,8 @@ AuditLogs
 | order by TimeGenerated desc
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Sensitive Administrative Action
 ↓
 Identify Actor
@@ -639,8 +643,8 @@ SigninLogs
 | order by FailedAttempts desc
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Failed Authentication
 ↓
 Count Distinct Authentication Flows (CorrelationId)
@@ -690,8 +694,8 @@ RecentSignins
 | order by DaysSincePreviousLogin desc
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Previously Inactive Identity
 ↓
 Successful Sign-In Detected
@@ -757,8 +761,8 @@ AuditLogs
 | order by TimeGenerated desc
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Privileged Role Assignment
 ↓
 Exclude Expected PIM Activity
@@ -827,8 +831,8 @@ SigninLogs
 
 Question: Did the identity successfully authenticate after the account was disabled?
 
-## Detection Progression
-```yanl
+## Detection Logic
+```yaml
 Disabled Account Attempt (50057)
 ↓
 Baseline Detection
@@ -928,8 +932,8 @@ MFAFailures
 | order by SuccessfulLogin desc
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 MFA challenge rejected
 ↓
 Count distinct authentication flows (CorrelationId)
@@ -980,8 +984,9 @@ AzureActivity
     ActivityStatusValue
 | order by TimeGenerated desc
 ```
-```YAML
-Detection Logic
+
+## Detection Logic
+```yaml
 Sensitive Azure Operation
 ↓
 Identify Caller
@@ -1029,8 +1034,9 @@ AuditLogs
 | order by TimeGenerated desc
 ```
 
+
+## Detection Logic
 ```yaml
-Detection Logic
 Application Consent Granted
 ↓
 Identify User and Application
@@ -1048,8 +1054,7 @@ The detection identifies application consent involving sensitive permissions tha
 ## 10. Service Principal Credential Abuse — T1098.001
 Service principals are non-human identities used by applications, automation, and cloud services. An attacker with sufficient privileges may add a secret or certificate to an existing service principal, creating a potential persistence mechanism.
 
-This detection monitors AuditLogs for credential and secret changes involving service principals. 
-Example Detection
+This detection monitors `AuditLogs` for credential and secret changes involving service principals. 
 
 ```kql
 AuditLogs
@@ -1076,8 +1081,8 @@ AuditLogs
 | order by TimeGenerated desc
 ```
 
+## Detection Logic
 ```yaml
-Detection Logic
 Service Principal Modified
 ↓
 Credential or Secret Added
