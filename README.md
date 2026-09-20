@@ -82,7 +82,7 @@ Threshold Exceeded
 ↓
 Review for Excessive Privilege
 ```
-The threshold is an example. In production, privileges should be compared against the user’s expected role.
+This demonstrates least-privilege monitoring. In production, privileges should be compared against the user’s expected role.
 
 
 ## 2. Detect Unauthorized Administrative Access
@@ -127,7 +127,7 @@ Unauthorized Actor Detected
 ↓
 Investigate
 ```
-This now matches the KQL concept better: we're detecting a sensitive administrative action by an unauthorized actor, rather than merely checking whether someone has an admin role.
+We're detecting a sensitive administrative action by an unauthorized actor, rather than merely checking whether someone has an admin role.
 
 
 ## 3. Detect Repeated Failed Logins
@@ -172,7 +172,7 @@ Threshold Exceeded
 ↓
 Investigate
 ```
-This mirrors the KQL use of dcount(CorrelationId) and prevents duplicate records from inflating the failure count.
+This demonstrates least-privilege monitoring, KQL use of dcount(CorrelationId) and prevents duplicate records from inflating the failure count.
 
 
 ## 4. Detect Dormant Account Usage
@@ -211,7 +211,7 @@ Dormant Account Reactivated
 ↓
 Investigate
 ```
-This now mirrors the KQL logic much better: it detects activity from a dormant account, not just dormancy itself.
+This supports Identity Governance and Administration (IGA) by identifying accounts that may need disabling or review, by detecting activity from a dormant account, not just dormancy itself.
 
 
 ## 5. Detect Privilege Escalation
@@ -267,7 +267,7 @@ Unexpected Privileged Assignment
 ↓
 Investigate
 ````
-This now aligns with the updated KQL logic instead of treating every privileged-role assignment as malicious.
+This one detects a security-relevant change, rather than just validating configuration, using KQL logic instead of treating every privileged-role assignment as malicious.
 
 
 ## 6. Detect Disabled Account Authentication
@@ -315,7 +315,7 @@ Authentication Occurred After Disablement
 ↓
 Investigate Immediately
 ```
-This now mirrors the stronger KQL correlation instead of only checking whether an account is currently marked disabled.
+A disabled account successfully authenticating would warrant immediate investigation, instead of only checking whether an account is currently marked disabled.
 
 
 ## 7. Detect MFA Fatigue Behavior
@@ -357,11 +357,11 @@ Successful Authentication Follows
 ↓
 Investigate
 ```
-This now mirrors the KQL logic by avoiding duplicate counting and focusing on the rejection → success behavioral sequence.
+This is an especially strong IAM detection example it connects authentication telemetry to attacker behavior, using KQL logic by avoiding duplicate counting and focusing on the rejection → success behavioral sequence.
 
 
 ## 8. Detect Access Outside Normal Role Permissions
-To match the revised KQL, the Python example should focus on sensitive operations and compare the actor against an approved authorization baseline.
+This expands the original RBAC example into an actual detection control, the Python code should focus on sensitive operations and compare the attacker behavior against an approved authorization baseline.
 
 ```kql
 approved_admins = [
@@ -409,45 +409,46 @@ Unexpected Actor Detected
 ↓
 Investigate
 ```
-This now aligns with the revised RBAC KQL by focusing on specific sensitive actions, rather than treating all activity outside a role as equally important.
+This produces the kind of detection logic in the IAM project:
 
+```yaml
+Identity → Role → Expected Permission → Observed Action → Detection
+```
 
-## 9. Detect OAuth / Illicit Consent Grant Abuse
-This matches the KQL concept for OAuth / Illicit Consent Grant Abuse — T1528.
+## 9. OAuth / Illicit Consent Grant Abuse — T1528
+OAuth consent abuse occurs when a user authorizes a malicious application to access organizational resources. This can bypass the need to defeat MFA because access is granted through application permissions.
+
+This detection monitors `AuditLogs` for application consent involving high-risk permissions such as `Mail.ReadWrite`, `Files.ReadWrite.All`, and `Directory.ReadWrite.All`. 
+The detection identifies application consent involving sensitive permissions that should be validated against expected business requirements.
 
 ```kql
-high_risk_permissions = [
+AuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName has_any (
+    "Consent to application",
+    "Add delegated permission grant"
+)
+| extend Actor =
+    tostring(InitiatedBy.user.userPrincipalName)
+| extend TargetApplication =
+    tostring(TargetResources[0].displayName)
+| extend ModifiedProperties =
+    tostring(TargetResources[0].modifiedProperties)
+| where ModifiedProperties has_any (
     "Mail.ReadWrite",
     "Files.ReadWrite.All",
     "Directory.ReadWrite.All"
-]
+)
+| project
+    TimeGenerated,
+    Actor,
+    TargetApplication,
+    OperationName,
+    ModifiedProperties,
+    Result
+| order by TimeGenerated desc
 
-consent_events = [
-    {
-        "user": "alice",
-        "application": "ReportViewer",
-        "permissions": ["Mail.Read"]
-    },
-    {
-        "user": "bob",
-        "application": "UnknownApp",
-        "permissions": ["Mail.ReadWrite", "Files.ReadWrite.All"]
-    }
-]
 
-for event in consent_events:
-    risky_permissions = [
-        permission
-        for permission in event["permissions"]
-        if permission in high_risk_permissions
-    ]
-
-    if risky_permissions:
-        print(
-            f"[ALERT] High-risk application consent: "
-            f"{event['user']} granted {risky_permissions} "
-            f"to {event['application']}"
-        )
 ```
 ```yaml
 Detection Logic
